@@ -19,15 +19,17 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	class JosaMap final {
 	private:
-		std::vector<std::pair<Josa, Constant>> m_List;
+		std::vector<std::pair<Josa, Constant>> m_Map;
 
 	public:
 		JosaMap() noexcept = default;
-		JosaMap(JosaMap&& josaList) noexcept;
+		JosaMap(const JosaMap& josaMap) noexcept;
+		JosaMap(JosaMap&& josaMap) noexcept;
 		~JosaMap() = default;
 
 	public:
-		JosaMap& operator=(JosaMap&& josaList) noexcept;
+		JosaMap& operator=(const JosaMap& josaMap) noexcept;
+		JosaMap& operator=(JosaMap&& josaMap) noexcept;
 		const Josa& operator[](std::uint8_t index) const noexcept;
 
 	public:
