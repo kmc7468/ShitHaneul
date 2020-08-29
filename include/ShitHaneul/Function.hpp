@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ShitHaneul/ConstantList.hpp>
+#include <ShitHaneul/Constant.hpp>
 
 #include <cstddef>
 #include <cstdint>

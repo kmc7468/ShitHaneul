@@ -1,7 +1,5 @@
 #pragma once
-#include "../ConstantList.hpp"
-
-#include <type_traits>
+#include "../Constant.hpp"
 
 namespace ShitHaneul {
 	template<typename T>
