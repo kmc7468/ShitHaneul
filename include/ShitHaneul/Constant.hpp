@@ -5,7 +5,7 @@
 #include <variant>
 
 namespace ShitHaneul {
-	enum class Type {
+	enum class ConstantType : std::uint8_t {
 		None,
 		Integer,
 		Real,
@@ -19,7 +19,7 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	class IntegerConstant final {
 	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::Integer;
+		const ConstantType Type = ConstantType::Integer;
 		std::int64_t Value = 0;
 
 	public:
@@ -36,7 +36,7 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	class RealConstant final {
 	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::Real;
+		const ConstantType Type = ConstantType::Real;
 		double Value = 0;
 
 	public:
@@ -53,7 +53,7 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	class BooleanConstant final {
 	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::Boolean;
+		const ConstantType Type = ConstantType::Boolean;
 		bool Value = 0;
 
 	public:
@@ -70,7 +70,7 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	class CharacterConstant final {
 	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::Character;
+		const ConstantType Type = ConstantType::Character;
 		char32_t Value = 0;
 
 	public:
