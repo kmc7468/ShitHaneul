@@ -53,7 +53,7 @@ namespace ShitHaneul {
 	class RealConstant final {
 	public:
 		const ShitHaneul::Type Type = ShitHaneul::Type::Real;
-		double Value = 0;
+		double Value = 0.0;
 
 	public:
 		RealConstant() noexcept = default;
@@ -70,7 +70,7 @@ namespace ShitHaneul {
 	class BooleanConstant final {
 	public:
 		const ShitHaneul::Type Type = ShitHaneul::Type::Boolean;
-		bool Value = 0;
+		bool Value = false;
 
 	public:
 		BooleanConstant() noexcept = default;
@@ -87,7 +87,7 @@ namespace ShitHaneul {
 	class CharacterConstant final {
 	public:
 		const ShitHaneul::Type Type = ShitHaneul::Type::Character;
-		char32_t Value = 0;
+		char32_t Value = '\0';
 
 	public:
 		CharacterConstant() noexcept = default;
