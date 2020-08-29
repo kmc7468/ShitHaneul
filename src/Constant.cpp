@@ -1,7 +1,7 @@
 #include <ShitHaneul/Constant.hpp>
 
 namespace ShitHaneul {
-	IntegerConstant::IntegerConstant(std::int_fast64_t value) noexcept
+	IntegerConstant::IntegerConstant(std::int64_t value) noexcept
 		: Value(value) {}
 	IntegerConstant::IntegerConstant(const IntegerConstant& constant) noexcept
 		: Value(constant.Value) {}

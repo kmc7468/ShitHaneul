@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <type_traits>
+#include <variant>
 
 namespace ShitHaneul {
 	enum class Type {
@@ -18,11 +20,11 @@ namespace ShitHaneul {
 	class IntegerConstant final {
 	public:
 		const ShitHaneul::Type Type = ShitHaneul::Type::Integer;
-		std::int_fast64_t Value = 0;
+		std::int64_t Value = 0;
 
 	public:
 		IntegerConstant() noexcept = default;
-		IntegerConstant(std::int_fast64_t value) noexcept;
+		IntegerConstant(std::int64_t value) noexcept;
 		IntegerConstant(const IntegerConstant& constant) noexcept;
 		~IntegerConstant() = default;
 
@@ -80,4 +82,27 @@ namespace ShitHaneul {
 	public:
 		CharacterConstant& operator=(const CharacterConstant& constant) noexcept;
 	};
+}
+
+namespace ShitHaneul {
+	using Constant = std::variant<std::monostate,
+		IntegerConstant,
+		RealConstant,
+		BooleanConstant,
+		CharacterConstant>;
+
+	template<typename T>
+	using MakeConstantClass = std::conditional_t<
+		std::is_same_v<T, std::int64_t>, IntegerConstant,
+		std::conditional_t<
+			std::is_same_v<T, double>, RealConstant,
+			std::conditional_t<
+				std::is_same_v<T, bool>, BooleanConstant,
+				std::conditional_t<
+					std::is_same_v<T, char32_t>, CharacterConstant,
+					void
+				>
+			>
+		>
+	>;
 }
