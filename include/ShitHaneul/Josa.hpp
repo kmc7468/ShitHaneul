@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -16,36 +17,23 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	class JosaMap;
-
-	class JosaList final {
+	class JosaMap final {
 	private:
-		std::vector<Josa> m_List;
+		std::vector<std::pair<Josa, Constant>> m_List;
 
 	public:
-		JosaList() noexcept = default;
-		JosaList(JosaList&& josaList) noexcept;
-		~JosaList() = default;
+		JosaMap() noexcept = default;
+		JosaMap(JosaMap&& josaList) noexcept;
+		~JosaMap() = default;
 
 	public:
-		JosaList& operator=(JosaList&& josaList) noexcept;
+		JosaMap& operator=(JosaMap&& josaList) noexcept;
 		const Josa& operator[](std::uint8_t index) const noexcept;
 
 	public:
 		void AddJosa(std::string&& josa);
 		std::uint8_t GetCount() const noexcept;
 		void ReserveJosas(std::uint8_t count);
-
-		JosaMap MakeMap() const;
-	};
-}
-
-namespace ShitHaneul {
-	class JosaMap final {
-	private:
-		std::vector<std::pair<Josa, Constant>> m_Map;
-
-	public:
-
+		void BindConstant(const std::string_view& josa, const Constant& constant);
 	};
 }

@@ -4,6 +4,14 @@
 #include <utility>
 
 namespace ShitHaneul {
+	NoneConstant::NoneConstant(const NoneConstant&) noexcept {}
+
+	NoneConstant& NoneConstant::operator=(const NoneConstant&) noexcept {
+		return *this;
+	}
+}
+
+namespace ShitHaneul {
 	IntegerConstant::IntegerConstant(std::int64_t value) noexcept
 		: Value(value) {}
 	IntegerConstant::IntegerConstant(const IntegerConstant& constant) noexcept
