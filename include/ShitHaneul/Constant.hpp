@@ -18,6 +18,21 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	class NoneConstant final {
+	public:
+		const ShitHaneul::Type Type = ShitHaneul::Type::None;
+
+	public:
+		NoneConstant() noexcept = default;
+		NoneConstant(const NoneConstant& constant) noexcept;
+		~NoneConstant() = default;
+
+	public:
+		NoneConstant& operator=(const NoneConstant& constant) noexcept;
+	};
+}
+
+namespace ShitHaneul {
 	class IntegerConstant final {
 	public:
 		const ShitHaneul::Type Type = ShitHaneul::Type::Integer;
@@ -87,6 +102,7 @@ namespace ShitHaneul {
 
 namespace ShitHaneul {
 	using Constant = std::variant<std::monostate,
+		NoneConstant,
 		IntegerConstant,
 		RealConstant,
 		BooleanConstant,

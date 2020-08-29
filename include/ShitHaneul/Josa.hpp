@@ -1,8 +1,11 @@
 #pragma once
 
+#include <ShitHaneul/Constant.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ShitHaneul {
@@ -10,6 +13,10 @@ namespace ShitHaneul {
 		std::string String;
 		std::size_t Hash;
 	};
+}
+
+namespace ShitHaneul {
+	class JosaMap;
 
 	class JosaList final {
 	private:
@@ -28,5 +35,17 @@ namespace ShitHaneul {
 		void AddJosa(std::string&& josa);
 		std::uint8_t GetCount() const noexcept;
 		void ReserveJosas(std::uint8_t count);
+
+		JosaMap MakeMap() const;
+	};
+}
+
+namespace ShitHaneul {
+	class JosaMap final {
+	private:
+		std::vector<std::pair<Josa, Constant>> m_Map;
+
+	public:
+
 	};
 }
