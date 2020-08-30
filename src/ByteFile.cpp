@@ -5,13 +5,16 @@
 
 namespace ShitHaneul {
 	ByteFile::ByteFile(ByteFile&& byteFile) noexcept
-		: m_Functions(std::move(byteFile.m_Functions)) {}
+		: m_FunctionInfos(std::move(byteFile.m_FunctionInfos)), m_Functions(std::move(byteFile.m_Functions)),
+		m_RootFunction(byteFile.m_RootFunction) {}
 	ByteFile::~ByteFile() {
 		Clear();
 	}
 
 	ByteFile& ByteFile::operator=(ByteFile&& byteFile) noexcept {
+		m_FunctionInfos = std::move(byteFile.m_FunctionInfos);
 		m_Functions = std::move(byteFile.m_Functions);
+		m_RootFunction = byteFile.m_RootFunction;
 		return *this;
 	}
 
@@ -33,5 +36,8 @@ namespace ShitHaneul {
 	}
 	void ByteFile::AddFunction(Function* function) {
 		m_Functions.push_back(function);
+	}
+	void ByteFile::SetRoot(Function* function) {
+		m_RootFunction = function;
 	}
 }
