@@ -15,13 +15,11 @@ namespace ShitHaneul {
 		Function,
 		Structure,
 	};
-}
 
-namespace ShitHaneul {
+	class Function;
+	class Structure;
+
 	class NoneConstant final {
-	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::None;
-
 	public:
 		NoneConstant() noexcept = default;
 		NoneConstant(const NoneConstant& constant) noexcept;
@@ -30,12 +28,8 @@ namespace ShitHaneul {
 	public:
 		NoneConstant& operator=(const NoneConstant& constant) noexcept;
 	};
-}
 
-namespace ShitHaneul {
 	class IntegerConstant final {
-	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::Integer;
 		std::int64_t Value = 0;
 
 	public:
@@ -47,12 +41,8 @@ namespace ShitHaneul {
 	public:
 		IntegerConstant& operator=(const IntegerConstant& constant) noexcept;
 	};
-}
 
-namespace ShitHaneul {
 	class RealConstant final {
-	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::Real;
 		double Value = 0.0;
 
 	public:
@@ -64,12 +54,8 @@ namespace ShitHaneul {
 	public:
 		RealConstant& operator=(const RealConstant& constant) noexcept;
 	};
-}
 
-namespace ShitHaneul {
 	class BooleanConstant final {
-	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::Boolean;
 		bool Value = false;
 
 	public:
@@ -81,12 +67,8 @@ namespace ShitHaneul {
 	public:
 		BooleanConstant& operator=(const BooleanConstant& constant) noexcept;
 	};
-}
 
-namespace ShitHaneul {
 	class CharacterConstant final {
-	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::Character;
 		char32_t Value = '\0';
 
 	public:
@@ -98,14 +80,8 @@ namespace ShitHaneul {
 	public:
 		CharacterConstant& operator=(const CharacterConstant& constant) noexcept;
 	};
-}
-
-namespace ShitHaneul {
-	class Function;
 
 	class FunctionConstant final {
-	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::Function;
 		Function* Value = nullptr;
 
 	public:
@@ -117,14 +93,8 @@ namespace ShitHaneul {
 	public:
 		FunctionConstant& operator=(const FunctionConstant& constant) noexcept;
 	};
-}
-
-namespace ShitHaneul {
-	class Structure;
 
 	class StructureConstant final {
-	public:
-		const ShitHaneul::Type Type = ShitHaneul::Type::Function;
 		Structure* Value = nullptr;
 
 	public:
@@ -147,6 +117,8 @@ namespace ShitHaneul {
 		CharacterConstant,
 		FunctionConstant,
 		StructureConstant>;
+
+	Type GetType(const Constant& constant) noexcept;
 
 	template<typename T>
 	using MakeConstantClass = std::conditional_t<

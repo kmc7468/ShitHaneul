@@ -1,5 +1,6 @@
 #include <ShitHaneul/Constant.hpp>
 
+#include <cassert>
 #include <cstddef>
 #include <utility>
 
@@ -80,6 +81,13 @@ namespace ShitHaneul {
 	StructureConstant& StructureConstant::operator=(const StructureConstant& constant) noexcept {
 		Value = constant.Value;
 		return *this;
+	}
+}
+
+namespace ShitHaneul {
+	Type GetType(const Constant& constant) noexcept {
+		assert(constant.index() > 0);
+		return static_cast<Type>(constant.index() - 1);
 	}
 }
 
