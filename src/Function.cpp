@@ -34,7 +34,7 @@ namespace ShitHaneul {
 		: Name(std::move(functionInfo.Name)), Line(std::move(functionInfo.Line)),
 		StackOperandCount(functionInfo.StackOperandCount), LocalVariableCount(functionInfo.LocalVariableCount),
 		ConstantList(std::move(functionInfo.ConstantList)), GlobalList(std::move(functionInfo.GlobalList)),
-		JosaMap(std::move(functionInfo.JosaMap)), LineMap(std::move(functionInfo.LineMap)),
+		JosaList(std::move(functionInfo.JosaList)), LineMap(std::move(functionInfo.LineMap)),
 		InstructionList(std::move(functionInfo.InstructionList)) {}
 
 	FunctionInfo& FunctionInfo::operator=(FunctionInfo&& functionInfo) noexcept {
@@ -46,7 +46,7 @@ namespace ShitHaneul {
 		ConstantList = std::move(functionInfo.ConstantList);
 		GlobalList = std::move(functionInfo.GlobalList);
 
-		JosaMap = std::move(functionInfo.JosaMap);
+		JosaList = std::move(functionInfo.JosaList);
 		LineMap = std::move(functionInfo.LineMap);
 		InstructionList = std::move(functionInfo.InstructionList);
 		return *this;
@@ -55,7 +55,7 @@ namespace ShitHaneul {
 
 namespace ShitHaneul {
 	Function::Function(const FunctionInfo* info)
-		: Info(info), JosaMap(info->JosaMap) {}
+		: Info(info), JosaMap(info->JosaList) {}
 	Function::Function(const Function& function)
 		: Info(function.Info), JosaMap(function.JosaMap), FreeVariableList(function.FreeVariableList) {}
 	Function::Function(Function&& function) noexcept

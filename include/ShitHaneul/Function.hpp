@@ -48,7 +48,7 @@ namespace ShitHaneul {
 		ShitHaneul::ConstantList ConstantList;
 		std::vector<Constant> GlobalList;
 
-		ShitHaneul::JosaMap JosaMap;
+		ShitHaneul::JosaList JosaList;
 		ShitHaneul::LineMap LineMap;
 		ShitHaneul::InstructionList InstructionList;
 
