@@ -101,24 +101,42 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	class Function;
+
+	class FunctionConstant final {
+	public:
+		const ShitHaneul::Type Type = ShitHaneul::Type::Function;
+		Function* Value = nullptr;
+
+	public:
+		FunctionConstant() noexcept = default;
+		FunctionConstant(Function* value) noexcept;
+		FunctionConstant(const FunctionConstant& constant) noexcept;
+		~FunctionConstant() = default;
+
+	public:
+		FunctionConstant& operator=(const FunctionConstant& constant) noexcept;
+	};
+}
+
+namespace ShitHaneul {
 	using Constant = std::variant<std::monostate,
 		NoneConstant,
 		IntegerConstant,
 		RealConstant,
 		BooleanConstant,
-		CharacterConstant>;
+		CharacterConstant,
+		FunctionConstant>;
 
 	template<typename T>
 	using MakeConstantClass = std::conditional_t<
 		std::is_same_v<T, std::int64_t>, IntegerConstant, std::conditional_t<
-			std::is_same_v<T, double>, RealConstant, std::conditional_t<
-				std::is_same_v<T, bool>, BooleanConstant, std::conditional_t<
-					std::is_same_v<T, char32_t>, CharacterConstant,
-					void
-				>
-			>
-		>
-	>;
+		std::is_same_v<T, double>, RealConstant, std::conditional_t<
+		std::is_same_v<T, bool>, BooleanConstant, std::conditional_t<
+		std::is_same_v<T, char32_t>, CharacterConstant, std::conditional_t<
+		std::is_same_v<T, Function*>, FunctionConstant,
+		void
+	>>>>>;
 
 	class ConstantList final {
 	private:

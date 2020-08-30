@@ -60,6 +60,18 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	FunctionConstant::FunctionConstant(Function* value) noexcept
+		: Value(value) {}
+	FunctionConstant::FunctionConstant(const FunctionConstant& constant) noexcept
+		: Value(constant.Value) {}
+
+	FunctionConstant& FunctionConstant::operator=(const FunctionConstant& constant) noexcept {
+		Value = constant.Value;
+		return *this;
+	}
+}
+
+namespace ShitHaneul {
 	ConstantList::ConstantList(ConstantList&& constantList) noexcept
 		: m_List(std::move(constantList.m_List)) {}
 
