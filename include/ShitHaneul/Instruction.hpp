@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ShitHaneul/Josa.hpp>
+#include <ShitHaneul/Constant.hpp>
 
 #include <cstdint>
 #include <string>

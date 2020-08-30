@@ -1,4 +1,4 @@
-#include <ShitHaneul/StackFrame.hpp>
+#include <ShitHaneul/Interpreter.hpp>
 
 #include <utility>
 

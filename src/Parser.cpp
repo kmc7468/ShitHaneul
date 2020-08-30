@@ -1,9 +1,49 @@
 #include <ShitHaneul/Parser.hpp>
 
+#include <algorithm>
 #include <fstream>
 #include <functional>
 #include <ios>
 #include <memory>
+
+namespace ShitHaneul {
+	ByteFile::ByteFile(ByteFile&& byteFile) noexcept
+		: m_FunctionInfos(std::move(byteFile.m_FunctionInfos)), m_Functions(std::move(byteFile.m_Functions)),
+		m_RootFunction(byteFile.m_RootFunction) {}
+	ByteFile::~ByteFile() {
+		Clear();
+	}
+
+	ByteFile& ByteFile::operator=(ByteFile&& byteFile) noexcept {
+		m_FunctionInfos = std::move(byteFile.m_FunctionInfos);
+		m_Functions = std::move(byteFile.m_Functions);
+		m_RootFunction = byteFile.m_RootFunction;
+		return *this;
+	}
+
+	void ByteFile::Clear() noexcept {
+		static constexpr auto deleter = [](auto pointer) {
+			delete pointer;
+		};
+
+		std::for_each(m_FunctionInfos.begin(), m_FunctionInfos.end(), deleter);
+		std::for_each(m_Functions.begin(), m_Functions.end(), deleter);
+	}
+
+	Function* ByteFile::RegisterFunction(FunctionInfo* functionInfo) {
+		m_FunctionInfos.push_back(functionInfo);
+
+		std::unique_ptr<Function> result(new Function(functionInfo));
+		AddFunction(result.get());
+		return result.release();
+	}
+	void ByteFile::AddFunction(Function* function) {
+		m_Functions.push_back(function);
+	}
+	void ByteFile::SetRoot(Function* function) {
+		m_RootFunction = function;
+	}
+}
 
 namespace ShitHaneul {
 	void Parser::Load(const std::string& path) {
@@ -37,14 +77,14 @@ namespace ShitHaneul {
 		} else if (first < 0xF0) {
 			const auto second = ReadScalar<std::uint8_t>();
 			const auto third = ReadScalar<std::uint8_t>();
-			return ((static_cast<char32_t>(first) & 0x0F) << 12) + ((static_cast<char32_t>(second) & 0x3F) << 6)
-				+ (static_cast<char32_t>(third) & 0x3F);
+			return ((static_cast<char32_t>(first) & 0x0F) << 12) + ((static_cast<char32_t>(second) & 0x3F) << 6) +
+				(static_cast<char32_t>(third) & 0x3F);
 		} else {
 			const auto second = ReadScalar<std::uint8_t>();
 			const auto third = ReadScalar<std::uint8_t>();
 			const auto fourth = ReadScalar<std::uint8_t>();
-			return ((static_cast<char32_t>(first) & 0x07) << 18) + ((static_cast<char32_t>(second) & 0x3F) << 12)
-				+ ((static_cast<char32_t>(second) & 0x3F) << 6) + (static_cast<char32_t>(fourth) & 0x3F);
+			return ((static_cast<char32_t>(first) & 0x07) << 18) + ((static_cast<char32_t>(second) & 0x3F) << 12) +
+				((static_cast<char32_t>(second) & 0x3F) << 6) + (static_cast<char32_t>(fourth) & 0x3F);
 		}
 	}
 
@@ -174,8 +214,7 @@ namespace ShitHaneul {
 		case OpCode::AddStruct:
 		case OpCode::MakeStruct: {
 			auto name = ReadString<std::uint8_t>();
-			auto josaList = ParseJosaList();
-			result.Operand = std::make_pair(std::move(name), std::move(josaList));
+			result.Operand = std::make_pair(std::move(name), ParseJosaList());
 			break;
 		}
 
@@ -192,7 +231,7 @@ namespace ShitHaneul {
 
 		for (std::uint8_t i = 0; i < count; ++i) {
 			const auto variableType = ReadScalar<VariableType>();
-			const std::uint8_t index = ReadScalar<std::uint8_t>();
+			const auto index = ReadScalar<std::uint8_t>();
 			result.push_back({ variableType, index });
 		}
 		return result;
