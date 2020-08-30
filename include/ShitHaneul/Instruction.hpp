@@ -81,4 +81,23 @@ namespace ShitHaneul {
 	public:
 		std::string_view GetMnemonic() const noexcept;
 	};
+
+	class InstructionList final {
+	private:
+		std::vector<Instruction> m_List;
+
+	public:
+		InstructionList() noexcept = default;
+		InstructionList(InstructionList&& instructionList) noexcept;
+		~InstructionList() = default;
+
+	public:
+		InstructionList& operator=(InstructionList&& instructionList) noexcept;
+		const Instruction& operator[](std::uint64_t index) const noexcept;
+
+	public:
+		void Add(Instruction&& instruction);
+		std::uint64_t GetCount() const noexcept;
+		void Reserve(std::uint64_t count);
+	};
 }
