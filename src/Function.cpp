@@ -1,7 +1,6 @@
 #include <ShitHaneul/Function.hpp>
 
 #include <cstddef>
-#include <utility>
 
 namespace ShitHaneul {
 	LineMap::LineMap(LineMap&& lineMap) noexcept
@@ -18,7 +17,7 @@ namespace ShitHaneul {
 	void LineMap::Add(std::uint64_t offset, std::uint16_t line) {
 		m_Map.push_back({ offset, line });
 	}
-	void LineMap::Add(std::uint64_t offset, std::string&& path) {
+	void LineMap::Add(std::uint64_t offset, std::u32string&& path) {
 		m_Map.push_back({ offset, UINT16_MAX, std::move(path) });
 	}
 	std::uint64_t LineMap::GetCount() const noexcept {

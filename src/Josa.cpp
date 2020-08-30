@@ -11,12 +11,12 @@ namespace ShitHaneul {
 		m_List = std::move(josaList.m_List);
 		return *this;
 	}
-	const std::pair<std::size_t, std::string>& JosaList::operator[](std::uint8_t index) const noexcept {
+	const std::pair<std::size_t, std::u32string>& JosaList::operator[](std::uint8_t index) const noexcept {
 		return m_List[static_cast<std::size_t>(index)];
 	}
 
-	void JosaList::Add(std::string&& josa) {
-		const std::size_t hash = std::hash<std::string>{}(josa);
+	void JosaList::Add(std::u32string&& josa) {
+		const std::size_t hash = std::hash<std::u32string>{}(josa);
 		m_List.push_back({ hash, std::move(josa) });
 	}
 	std::uint8_t JosaList::GetCount() const noexcept {
@@ -50,8 +50,8 @@ namespace ShitHaneul {
 		return *this;
 	}
 
-	void JosaMap::BindConstant(const std::string_view& josa, const Constant& constant) {
-		const std::size_t hash = std::hash<std::string_view>{}(josa);
+	void JosaMap::BindConstant(const std::u32string_view& josa, const Constant& constant) {
+		const std::size_t hash = std::hash<std::u32string_view>{}(josa);
 		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [josa, hash](const auto& element) {
 			return element.first.first == hash && element.first.second == josa;
 		});

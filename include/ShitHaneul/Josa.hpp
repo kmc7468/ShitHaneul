@@ -12,7 +12,7 @@
 namespace ShitHaneul {
 	class JosaList final {
 	private:
-		std::vector<std::pair<std::size_t, std::string>> m_List;
+		std::vector<std::pair<std::size_t, std::u32string>> m_List;
 
 	public:
 		JosaList() noexcept = default;
@@ -21,10 +21,10 @@ namespace ShitHaneul {
 
 	public:
 		JosaList& operator=(JosaList&& josaList) noexcept;
-		const std::pair<std::size_t, std::string>& operator[](std::uint8_t index) const noexcept;
+		const std::pair<std::size_t, std::u32string>& operator[](std::uint8_t index) const noexcept;
 
 	public:
-		void Add(std::string&& josa);
+		void Add(std::u32string&& josa);
 		std::uint8_t GetCount() const noexcept;
 		void Reserve(std::uint8_t count);
 	};
@@ -33,7 +33,7 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	class JosaMap final {
 	private:
-		std::vector<std::pair<std::pair<std::size_t, std::string_view>, Constant>> m_Map;
+		std::vector<std::pair<std::pair<std::size_t, std::u32string_view>, Constant>> m_Map;
 
 	public:
 		explicit JosaMap(const JosaList& josaList);
@@ -46,6 +46,6 @@ namespace ShitHaneul {
 		JosaMap& operator=(JosaMap&& josaMap) noexcept;
 
 	public:
-		void BindConstant(const std::string_view& josa, const Constant& constant);
+		void BindConstant(const std::u32string_view& josa, const Constant& constant);
 	};
 }

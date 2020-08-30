@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -13,7 +14,7 @@ namespace ShitHaneul {
 	struct LineInfo final {
 		std::uint64_t Offset = UINT64_MAX;
 		std::uint16_t Line = UINT16_MAX;
-		std::string Path;
+		std::u32string Path;
 	};
 
 	class LineMap final {
@@ -31,7 +32,7 @@ namespace ShitHaneul {
 
 	public:
 		void Add(std::uint64_t offset, std::uint16_t line);
-		void Add(std::uint64_t offset, std::string&& path);
+		void Add(std::uint64_t offset, std::u32string&& path);
 		std::uint64_t GetCount() const noexcept;
 		void Reserve(std::uint64_t count);
 	};
@@ -40,13 +41,13 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	class FunctionInfo final {
 	public:
-		std::string Name;
+		std::u32string Name;
 		LineInfo Line;
 
 		std::uint64_t StackOperandCount = 0;
 		std::uint32_t LocalVariableCount = 0;
 		ShitHaneul::ConstantList ConstantList;
-		std::vector<Constant> GlobalList;
+		std::vector<std::pair<std::size_t, std::u32string>> GlobalList;
 
 		ShitHaneul::JosaList JosaList;
 		ShitHaneul::LineMap LineMap;
