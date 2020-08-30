@@ -74,7 +74,7 @@ namespace ShitHaneul {
 	std::uint64_t ConstantList::GetCount() const noexcept {
 		return static_cast<std::uint64_t>(m_List.size());
 	}
-	void ConstantList::ReserveConstants(std::uint64_t count) {
+	void ConstantList::Reserve(std::uint64_t count) {
 		m_List.reserve(static_cast<std::size_t>(count));
 	}
 }

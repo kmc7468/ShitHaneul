@@ -15,14 +15,14 @@ namespace ShitHaneul {
 		return m_List[static_cast<std::size_t>(index)];
 	}
 
-	void JosaList::AddJosa(std::string&& josa) {
+	void JosaList::Add(std::string&& josa) {
 		const std::size_t hash = std::hash<std::string>{}(josa);
 		m_List.push_back({ hash, std::move(josa) });
 	}
 	std::uint8_t JosaList::GetCount() const noexcept {
 		return static_cast<std::uint8_t>(m_List.size());
 	}
-	void JosaList::ReserveJosas(std::uint8_t count) {
+	void JosaList::Reserve(std::uint8_t count) {
 		m_List.reserve(static_cast<std::size_t>(count));
 	}
 }

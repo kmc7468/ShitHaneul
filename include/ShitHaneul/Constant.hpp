@@ -135,9 +135,9 @@ namespace ShitHaneul {
 
 	public:
 		template<typename T>
-		void AddConstant(T rawConstant);
+		void Add(T rawConstant);
 		std::uint64_t GetCount() const noexcept;
-		void ReserveConstants(std::uint64_t count);
+		void Reserve(std::uint64_t count);
 	};
 }
 

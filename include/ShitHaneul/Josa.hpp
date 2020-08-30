@@ -24,9 +24,9 @@ namespace ShitHaneul {
 		const std::pair<std::size_t, std::string>& operator[](std::uint8_t index) const noexcept;
 
 	public:
-		void AddJosa(std::string&& josa);
+		void Add(std::string&& josa);
 		std::uint8_t GetCount() const noexcept;
-		void ReserveJosas(std::uint8_t count);
+		void Reserve(std::uint8_t count);
 	};
 }
 
