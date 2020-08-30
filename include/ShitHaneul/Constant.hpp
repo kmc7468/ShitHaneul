@@ -145,6 +145,7 @@ namespace ShitHaneul {
 		Constant operator[](std::uint64_t index) const noexcept;
 
 	public:
+		void Add();
 		template<typename T>
 		void Add(T rawConstant);
 		std::uint64_t GetCount() const noexcept;

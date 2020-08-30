@@ -103,6 +103,9 @@ namespace ShitHaneul {
 		return m_List[static_cast<std::size_t>(index)];
 	}
 
+	void ConstantList::Add() {
+		m_List.push_back(NoneConstant{});
+	}
 	std::uint64_t ConstantList::GetCount() const noexcept {
 		return static_cast<std::uint64_t>(m_List.size());
 	}
