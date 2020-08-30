@@ -72,10 +72,12 @@ namespace ShitHaneul {
 	public:
 		Function() noexcept = default;
 		explicit Function(const FunctionInfo* info);
+		Function(const Function& function);
 		Function(Function&& function) noexcept;
 		~Function() = default;
 
 	public:
+		Function& operator=(const Function& function) noexcept;
 		Function& operator=(Function&& function) noexcept;
 	};
 }

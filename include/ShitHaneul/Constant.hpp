@@ -120,13 +120,33 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	class Structure;
+
+	class StructureConstant final {
+	public:
+		const ShitHaneul::Type Type = ShitHaneul::Type::Function;
+		Structure* Value = nullptr;
+
+	public:
+		StructureConstant() noexcept = default;
+		StructureConstant(Structure* value) noexcept;
+		StructureConstant(const StructureConstant& constant) noexcept;
+		~StructureConstant() = default;
+
+	public:
+		StructureConstant& operator=(const StructureConstant& constant) noexcept;
+	};
+}
+
+namespace ShitHaneul {
 	using Constant = std::variant<std::monostate,
 		NoneConstant,
 		IntegerConstant,
 		RealConstant,
 		BooleanConstant,
 		CharacterConstant,
-		FunctionConstant>;
+		FunctionConstant,
+		StructureConstant>;
 
 	template<typename T>
 	using MakeConstantClass = std::conditional_t<
@@ -134,9 +154,10 @@ namespace ShitHaneul {
 		std::is_same_v<T, double>, RealConstant, std::conditional_t<
 		std::is_same_v<T, bool>, BooleanConstant, std::conditional_t<
 		std::is_same_v<T, char32_t>, CharacterConstant, std::conditional_t<
-		std::is_same_v<T, Function*>, FunctionConstant,
+		std::is_same_v<T, Function*>, FunctionConstant, std::conditional_t<
+		std::is_same_v<T, Structure*>, StructureConstant,
 		void
-	>>>>>;
+	>>>>>>;
 
 	class ConstantList final {
 	private:

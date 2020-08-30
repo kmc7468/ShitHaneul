@@ -72,6 +72,18 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	StructureConstant::StructureConstant(Structure* value) noexcept
+		: Value(value) {}
+	StructureConstant::StructureConstant(const StructureConstant& constant) noexcept
+		: Value(constant.Value) {}
+
+	StructureConstant& StructureConstant::operator=(const StructureConstant& constant) noexcept {
+		Value = constant.Value;
+		return *this;
+	}
+}
+
+namespace ShitHaneul {
 	ConstantList::ConstantList(ConstantList&& constantList) noexcept
 		: m_List(std::move(constantList.m_List)) {}
 

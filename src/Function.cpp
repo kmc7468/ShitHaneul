@@ -56,9 +56,17 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	Function::Function(const FunctionInfo* info)
 		: Info(info), JosaMap(info->JosaMap) {}
+	Function::Function(const Function& function)
+		: Info(function.Info), JosaMap(function.JosaMap), FreeVariableList(function.FreeVariableList) {}
 	Function::Function(Function&& function) noexcept
 		: Info(function.Info), JosaMap(std::move(function.JosaMap)), FreeVariableList(std::move(function.FreeVariableList)) {}
 
+	Function& Function::operator=(const Function& function) noexcept {
+		Info = function.Info;
+		JosaMap = function.JosaMap;
+		FreeVariableList = function.FreeVariableList;
+		return *this;
+	}
 	Function& Function::operator=(Function&& function) noexcept {
 		Info = function.Info;
 		JosaMap = std::move(function.JosaMap);
