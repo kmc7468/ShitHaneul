@@ -21,7 +21,7 @@ namespace ShitHaneul {
 	};
 
 	class Function;
-	class JosaMap;
+	class StringMap;
 
 	class NoneConstant final {
 	public:
@@ -99,11 +99,11 @@ namespace ShitHaneul {
 	};
 
 	class StructureConstant final {
-		JosaMap* Value = nullptr;
+		StringMap* Value = nullptr;
 
 	public:
 		StructureConstant() noexcept = default;
-		StructureConstant(JosaMap* value) noexcept;
+		StructureConstant(StringMap* value) noexcept;
 		StructureConstant(const StructureConstant& constant) noexcept;
 		~StructureConstant() = default;
 
@@ -131,9 +131,9 @@ namespace ShitHaneul {
 		std::is_same_v<T, bool>, BooleanConstant, std::conditional_t<
 		std::is_same_v<T, char32_t>, CharacterConstant, std::conditional_t<
 		std::is_same_v<T, Function*>, FunctionConstant, std::conditional_t<
-		std::is_same_v<T, JosaMap*>, StructureConstant,
+		std::is_same_v<T, StringMap*>, StructureConstant,
 		void
-		>>>>>>;
+	>>>>>>;
 
 	class ConstantList final {
 	private:
@@ -158,43 +158,43 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	class JosaList final {
+	class StringList final {
 	private:
 		std::vector<std::pair<std::size_t, std::u32string>> m_List;
 
 	public:
-		JosaList() noexcept = default;
-		JosaList(JosaList&& josaList) noexcept;
-		~JosaList() = default;
+		StringList() noexcept = default;
+		StringList(StringList&& stringList) noexcept;
+		~StringList() = default;
 
 	public:
-		JosaList& operator=(JosaList&& josaList) noexcept;
+		StringList& operator=(StringList&& stringList) noexcept;
 		const std::pair<std::size_t, std::u32string>& operator[](std::uint8_t index) const noexcept;
 
 	public:
-		void Add(std::u32string&& josa);
+		void Add(std::u32string&& string);
 		std::uint8_t GetCount() const noexcept;
 		void Reserve(std::uint8_t count);
 	};
 }
 
 namespace ShitHaneul {
-	class JosaMap final {
+	class StringMap final {
 	private:
 		std::vector<std::pair<std::pair<std::size_t, std::u32string_view>, Constant>> m_Map;
 
 	public:
-		explicit JosaMap(const JosaList& josaList);
-		JosaMap(const JosaMap& josaMap) noexcept;
-		JosaMap(JosaMap&& josaMap) noexcept;
-		~JosaMap() = default;
+		explicit StringMap(const StringList& stringList);
+		StringMap(const StringMap& stringMap) noexcept;
+		StringMap(StringMap&& stringMap) noexcept;
+		~StringMap() = default;
 
 	public:
-		JosaMap& operator=(const JosaMap& josaMap) noexcept;
-		JosaMap& operator=(JosaMap&& josaMap) noexcept;
+		StringMap& operator=(const StringMap& stringMap) noexcept;
+		StringMap& operator=(StringMap&& stringMap) noexcept;
 
 	public:
-		void BindConstant(const std::u32string_view& josa, const Constant& constant);
+		void BindConstant(const std::u32string_view& string, const Constant& constant);
 	};
 }
 

@@ -90,7 +90,7 @@ namespace ShitHaneul {
 
 	Function* Parser::ParseFunction() {
 		std::unique_ptr<FunctionInfo> info(new FunctionInfo);
-		info->JosaList = ParseJosaList();
+		info->JosaList = ParseStringList();
 		info->GlobalList = ParseGlobalList();
 		info->StackOperandCount = ReadScalar<std::uint64_t>();
 		info->LocalVariableCount = ReadScalar<std::uint32_t>();
@@ -104,8 +104,8 @@ namespace ShitHaneul {
 		Function* const result = m_Result.RegisterFunction(info.get());
 		return info.release(), result;
 	}
-	JosaList Parser::ParseJosaList() {
-		JosaList result;
+	StringList Parser::ParseStringList() {
+		StringList result;
 		const auto count = ReadScalar<std::uint8_t>();
 		result.Reserve(count);
 
@@ -208,13 +208,13 @@ namespace ShitHaneul {
 			break;
 
 		case OpCode::Call:
-			result.Operand = ParseJosaList();
+			result.Operand = ParseStringList();
 			break;
 
 		case OpCode::AddStruct:
 		case OpCode::MakeStruct: {
 			auto name = ReadString<std::uint8_t>();
-			result.Operand = std::make_pair(std::move(name), ParseJosaList());
+			result.Operand = std::make_pair(std::move(name), ParseStringList());
 			break;
 		}
 

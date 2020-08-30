@@ -62,8 +62,8 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	using Operand = std::variant<std::monostate,
 		std::uint32_t, std::u32string,
-		FreeVariableList, JosaList,
-		std::pair<std::u32string, JosaList>>;
+		FreeVariableList, StringList,
+		std::pair<std::u32string, StringList>>;
 
 	class Instruction final {
 	public:

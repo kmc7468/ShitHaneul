@@ -16,7 +16,7 @@ namespace ShitHaneul {
 	}
 	template<typename S>
 	std::u32string Parser::ReadString() {
-		const S length = ReadScalar<S>();
+		const auto length = ReadScalar<S>();
 		std::u32string result(static_cast<std::size_t>(length), 0);
 
 		for (S i = 0; i < length; ++i) {

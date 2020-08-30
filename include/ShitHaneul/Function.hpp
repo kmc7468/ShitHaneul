@@ -47,7 +47,7 @@ namespace ShitHaneul {
 		ShitHaneul::ConstantList ConstantList;
 		std::vector<std::pair<std::size_t, std::u32string>> GlobalList;
 
-		ShitHaneul::JosaList JosaList;
+		StringList JosaList;
 		ShitHaneul::LineMap LineMap;
 		ShitHaneul::InstructionList InstructionList;
 
@@ -65,7 +65,7 @@ namespace ShitHaneul {
 	class Function final {
 	public:
 		const FunctionInfo* Info = nullptr;
-		ShitHaneul::JosaMap JosaMap;
+		StringMap JosaMap;
 		std::vector<Constant> FreeVariableList;
 
 	public:

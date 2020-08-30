@@ -63,7 +63,7 @@ namespace ShitHaneul {
 		std::u32string ReadString();
 
 		Function* ParseFunction();
-		JosaList ParseJosaList();
+		StringList ParseStringList();
 		std::vector<std::pair<std::size_t, std::u32string>> ParseGlobalList();
 		ConstantList ParseConstantList();
 		LineMap ParseLineMap();
