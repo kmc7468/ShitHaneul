@@ -110,12 +110,9 @@ namespace ShitHaneul {
 
 	template<typename T>
 	using MakeConstantClass = std::conditional_t<
-		std::is_same_v<T, std::int64_t>, IntegerConstant,
-		std::conditional_t<
-			std::is_same_v<T, double>, RealConstant,
-			std::conditional_t<
-				std::is_same_v<T, bool>, BooleanConstant,
-				std::conditional_t<
+		std::is_same_v<T, std::int64_t>, IntegerConstant, std::conditional_t<
+			std::is_same_v<T, double>, RealConstant, std::conditional_t<
+				std::is_same_v<T, bool>, BooleanConstant, std::conditional_t<
 					std::is_same_v<T, char32_t>, CharacterConstant,
 					void
 				>
