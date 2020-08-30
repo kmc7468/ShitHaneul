@@ -1,18 +1,47 @@
 #pragma once
 
 #include <ShitHaneul/Constant.hpp>
+#include <ShitHaneul/Instruction.hpp>
 #include <ShitHaneul/Josa.hpp>
 
 #include <cstdint>
 #include <string>
+#include <variant>
 #include <vector>
+
+namespace ShitHaneul {
+	struct LineInfo final {
+		std::uint64_t Offset = UINT64_MAX;
+		std::uint16_t Line = UINT16_MAX;
+		std::string Path;
+	};
+
+	class LineMap final {
+	private:
+		std::vector<LineInfo> m_Map;
+
+	public:
+		LineMap() noexcept = default;
+		LineMap(LineMap&& lineMap) noexcept;
+		~LineMap() = default;
+
+	public:
+		LineMap& operator=(LineMap&& lineMap) noexcept;
+		const LineInfo& operator[](std::uint64_t index) const noexcept;
+
+	public:
+		void Add(std::uint64_t offset, std::uint16_t line);
+		void Add(std::uint64_t offset, std::string&& path);
+		std::uint64_t GetCount() const noexcept;
+		void Reserve(std::uint64_t count);
+	};
+}
 
 namespace ShitHaneul {
 	class FunctionInfo final {
 	public:
 		std::string Name;
-		std::string Path;
-		std::uint16_t Line = 0;
+		LineInfo Line;
 
 		std::uint64_t StackOperandCount = 0;
 		std::uint32_t LocalVariableCount = 0;
@@ -20,8 +49,8 @@ namespace ShitHaneul {
 		std::vector<Constant> GlobalList;
 
 		ShitHaneul::JosaMap JosaMap;
-
-		// TODO: LineTable, Instructions
+		ShitHaneul::LineMap LineMap;
+		ShitHaneul::InstructionList InstructionList;
 
 	public:
 		FunctionInfo() noexcept = default;
