@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cstddef>
 #include <cstdint>
@@ -40,6 +40,7 @@ namespace ShitHaneul {
 	};
 
 	class IntegerConstant final {
+	public:
 		std::int64_t Value = 0;
 
 	public:
@@ -53,6 +54,7 @@ namespace ShitHaneul {
 	};
 
 	class RealConstant final {
+	public:
 		double Value = 0.0;
 
 	public:
@@ -66,6 +68,7 @@ namespace ShitHaneul {
 	};
 
 	class BooleanConstant final {
+	public:
 		bool Value = false;
 
 	public:
@@ -79,6 +82,7 @@ namespace ShitHaneul {
 	};
 
 	class CharacterConstant final {
+	public:
 		char32_t Value = '\0';
 
 	public:
@@ -92,6 +96,7 @@ namespace ShitHaneul {
 	};
 
 	class FunctionConstant final {
+	public:
 		Function* Value = nullptr;
 
 	public:
@@ -105,6 +110,7 @@ namespace ShitHaneul {
 	};
 
 	class StructureConstant final {
+	public:
 		StringMap* Value = nullptr;
 
 	public:
