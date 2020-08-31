@@ -2,9 +2,12 @@
 
 #include <ShitHaneul/Constant.hpp>
 #include <ShitHaneul/Function.hpp>
+#include <ShitHaneul/Parser.hpp>
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace ShitHaneul {
@@ -31,5 +34,27 @@ namespace ShitHaneul {
 
 		void Store(std::uint32_t index);
 		void Load(std::uint32_t index);
+	};
+}
+
+namespace ShitHaneul {
+	class Interpreter final {
+	private:
+		ByteFile m_ByteFile;
+
+		std::vector<StackFrame> m_StackTrace;
+		std::unordered_map<std::u32string, Constant> m_GlobalVariables;
+		std::unordered_map<std::u32string, StringList> m_Structures;
+
+	public:
+		Interpreter() = default;
+		Interpreter(const Interpreter&) = delete;
+		~Interpreter() = default;
+
+	public:
+		Interpreter& operator=(const Interpreter&) = delete;
+
+	public:
+		void Load(ByteFile&& byteFile) noexcept;
 	};
 }

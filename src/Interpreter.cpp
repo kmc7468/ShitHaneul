@@ -35,3 +35,9 @@ namespace ShitHaneul {
 		m_Stack[m_Top++] = m_Stack[static_cast<std::size_t>(index)];
 	}
 }
+
+namespace ShitHaneul {
+	void Interpreter::Load(ByteFile&& byteFile) noexcept {
+		m_ByteFile = std::move(byteFile);
+	}
+}
