@@ -11,8 +11,20 @@ namespace ShitHaneul {
 		m_Map = std::move(lineMap.m_Map);
 		return *this;
 	}
-	const LineInfo& LineMap::operator[](std::uint64_t index) const noexcept {
-		return m_Map[static_cast<std::size_t>(index)];
+	LineInfo LineMap::operator[](std::uint64_t offset) const {
+		auto line = m_Map.begin();
+		auto path = m_Map.begin();
+
+		for (auto iter = m_Map.begin(); iter < m_Map.end(); ++iter) {
+			if (offset < iter->Offset) break;
+
+			if (iter->Path.empty()) {
+				line = iter;
+			} else {
+				path = iter;
+			}
+		}
+		return { UINT64_MAX, line->Line, path->Path };
 	}
 
 	void LineMap::Add(std::uint64_t offset, std::uint16_t line) {

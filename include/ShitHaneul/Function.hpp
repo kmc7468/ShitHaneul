@@ -26,7 +26,7 @@ namespace ShitHaneul {
 
 	public:
 		LineMap& operator=(LineMap&& lineMap) noexcept;
-		const LineInfo& operator[](std::uint64_t index) const noexcept;
+		LineInfo operator[](std::uint64_t offset) const;
 
 	public:
 		void Add(std::uint64_t offset, std::uint16_t line);

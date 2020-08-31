@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cstddef>
 #include <cstdint>
@@ -20,6 +20,12 @@ namespace ShitHaneul {
 		Structure,
 	};
 
+	static constexpr std::string_view TypeName[] = {
+		"없음", "정수", "실수", "부울", "문자", "함수", "구조체"
+	};
+}
+
+namespace ShitHaneul {
 	class Function;
 	class StringMap;
 

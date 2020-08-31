@@ -16,11 +16,11 @@ namespace ShitHaneul {
 		std::vector<Constant> m_Stack;
 		std::size_t m_Top;
 
-		const FunctionInfo* m_CurrentFunction;
-		std::uint64_t m_Offset = 0;
+		Function* m_CurrentFunction;
+		std::uint64_t m_CurrentOffset = 0;
 
 	public:
-		StackFrame(const FunctionInfo* currentFunction);
+		StackFrame(Function* currentFunction);
 		StackFrame(StackFrame&& stackFrame) noexcept;
 		~StackFrame() = default;
 
@@ -28,12 +28,17 @@ namespace ShitHaneul {
 		StackFrame& operator=(StackFrame&& stackFrame) noexcept;
 
 	public:
-		void Push(const Constant& constant);
-		Constant Pop();
+		void Push(const Constant& constant) noexcept;
+		void Pop() noexcept;
 		const Constant& GetTop() const noexcept;
 
 		void Store(std::uint32_t index);
 		void Load(std::uint32_t index);
+
+		const Function* GetCurrentFunction() const noexcept;
+		Function* GetCurrentFunction() noexcept;
+		std::uint64_t GetCurrentOffset() const noexcept;
+		void SetCurrentOffset(std::uint64_t newCurrentOffset) noexcept;
 	};
 }
 
@@ -65,7 +70,18 @@ namespace ShitHaneul {
 
 	public:
 		void Load(ByteFile&& byteFile);
+		bool Interpret();
 		const Exception& GetException() const noexcept;
 		const std::vector<StackFrame>& GetStackTrace() const noexcept;
+
+	private:
+		void RaiseException(std::uint64_t offset, std::string&& message);
+		static std::string InvalidTypeException(const std::string_view& expected, const std::string_view& given);
+		static std::string UnboundException(const std::string_view& type, const std::string_view& name);
+		static std::string UndefinedFunctionException();
+		static std::string FieldMismatchException(std::uint8_t expected, std::uint8_t given);
+		static std::string DivideByZeroException();
+		static std::string UnaryTypeException(const std::string_view& type, const std::string_view& operation);
+		static std::string BinaryTypeException(const std::string_view& lhs, const std::string_view& rhs, const std::string_view& operation);
 	};
 }
