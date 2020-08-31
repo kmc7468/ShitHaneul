@@ -5,6 +5,7 @@
 #include <functional>
 #include <ios>
 #include <memory>
+#include <utility>
 
 namespace ShitHaneul {
 	ByteFile::ByteFile(ByteFile&& byteFile) noexcept
@@ -121,15 +122,13 @@ namespace ShitHaneul {
 		}
 		return result;
 	}
-	std::vector<std::pair<std::size_t, std::u32string>> Parser::ParseGlobalList() {
-		std::vector<std::pair<std::size_t, std::u32string>> result;
+	std::vector<std::u32string> Parser::ParseGlobalList() {
+		std::vector<std::u32string> result;
 		const auto count = ReadScalar<std::uint64_t>();
 		result.reserve(static_cast<std::size_t>(count));
 
 		for (std::uint64_t i = 0; i < count; ++i) {
-			std::u32string name = ReadString();
-			const std::size_t hash = std::hash<std::u32string>{}(name);
-			result.push_back(std::make_pair(hash, std::move(name)));
+			result.push_back(ReadString());
 		}
 		return result;
 	}

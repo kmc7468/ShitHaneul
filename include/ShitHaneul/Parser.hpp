@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace ShitHaneul {
@@ -66,7 +65,7 @@ namespace ShitHaneul {
 
 		Function* ParseFunction();
 		StringList ParseStringList();
-		std::vector<std::pair<std::size_t, std::u32string>> ParseGlobalList();
+		std::vector<std::u32string> ParseGlobalList();
 		ConstantList ParseConstantList();
 		LineMap ParseLineMap();
 		InstructionList ParseInstructionList();

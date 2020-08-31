@@ -45,7 +45,7 @@ namespace ShitHaneul {
 		std::uint64_t StackOperandCount = 0;
 		std::uint32_t LocalVariableCount = 0;
 		ShitHaneul::ConstantList ConstantList;
-		std::vector<std::pair<std::size_t, std::u32string>> GlobalList;
+		std::vector<std::u32string> GlobalList;
 
 		StringList JosaList;
 		ShitHaneul::LineMap LineMap;
