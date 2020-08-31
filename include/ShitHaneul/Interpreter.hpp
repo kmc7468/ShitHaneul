@@ -38,9 +38,18 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	struct Exception final {
+		const FunctionInfo* Function;
+		LineInfo Line;
+		std::string Mesasge;
+	};
+}
+
+namespace ShitHaneul {
 	class Interpreter final {
 	private:
 		ByteFile m_ByteFile;
+		Exception m_Exception;
 
 		std::vector<StackFrame> m_StackTrace;
 		std::unordered_map<std::u32string, Constant> m_GlobalVariables;
@@ -55,6 +64,8 @@ namespace ShitHaneul {
 		Interpreter& operator=(const Interpreter&) = delete;
 
 	public:
-		void Load(ByteFile&& byteFile) noexcept;
+		void Load(ByteFile&& byteFile);
+		const Exception& GetException() const noexcept;
+		const std::vector<StackFrame>& GetStackTrace() const noexcept;
 	};
 }

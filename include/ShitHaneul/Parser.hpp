@@ -30,7 +30,9 @@ namespace ShitHaneul {
 
 		Function* RegisterFunction(FunctionInfo* functionInfo);
 		void AddFunction(Function* function);
-		void SetRoot(Function* function);
+		const Function* GetRoot() const noexcept;
+		Function* GetRoot() noexcept;
+		void SetRoot(Function* function) noexcept;
 	};
 }
 
@@ -51,7 +53,7 @@ namespace ShitHaneul {
 		Parser& operator=(const Parser&) = delete;
 
 	public:
-		void Load(const std::string& path);
+		bool Load(const std::string& path);
 		void Parse();
 		ByteFile GetResult() noexcept;
 

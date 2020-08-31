@@ -40,15 +40,21 @@ namespace ShitHaneul {
 	void ByteFile::AddFunction(Function* function) {
 		m_Functions.push_back(function);
 	}
-	void ByteFile::SetRoot(Function* function) {
+	const Function* ByteFile::GetRoot() const noexcept {
+		return m_RootFunction;
+	}
+	Function* ByteFile::GetRoot() noexcept {
+		return m_RootFunction;
+	}
+	void ByteFile::SetRoot(Function* function) noexcept {
 		m_RootFunction = function;
 	}
 }
 
 namespace ShitHaneul {
-	void Parser::Load(const std::string& path) {
+	bool Parser::Load(const std::string& path) {
 		std::ifstream stream(path, std::ifstream::binary);
-		// TODO: Exception handling
+		if (!stream) return false;
 
 		stream.seekg(0, std::ifstream::end);
 		const std::streamsize length = static_cast<std::streamsize>(stream.tellg());
@@ -56,10 +62,11 @@ namespace ShitHaneul {
 
 		m_Bytes.resize(static_cast<std::size_t>(length));
 		stream.read(reinterpret_cast<char*>(m_Bytes.data()), length);
-		// TODO: Exception handling
+		if (stream.gcount() != length) return false;
 
 		m_Cursor = 0;
 		m_Result.Clear();
+		return true;
 	}
 	void Parser::Parse() {
 		m_Result.SetRoot(ParseFunction());

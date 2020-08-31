@@ -37,7 +37,18 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	void Interpreter::Load(ByteFile&& byteFile) noexcept {
+	void Interpreter::Load(ByteFile&& byteFile) {
 		m_ByteFile = std::move(byteFile);
+
+		m_StackTrace.clear();
+		m_StackTrace.emplace_back(m_ByteFile.GetRoot()->Info);
+		m_GlobalVariables.clear();
+		m_Structures.clear();
+	}
+	const Exception& Interpreter::GetException() const noexcept {
+		return m_Exception;
+	}
+	const std::vector<StackFrame>& Interpreter::GetStackTrace() const noexcept {
+		return m_StackTrace;
 	}
 }
