@@ -29,6 +29,7 @@ namespace ShitHaneul {
 
 		Function* RegisterFunction(FunctionInfo* functionInfo);
 		void AddFunction(Function* function);
+		Function* CopyFunction(const Function* function);
 		const Function* GetRoot() const noexcept;
 		Function* GetRoot() noexcept;
 		void SetRoot(Function* function) noexcept;

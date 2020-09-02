@@ -1,10 +1,17 @@
 ﻿#include <ShitHaneul/Interpreter.hpp>
 
 #include <utility>
+#include <variant>
 
 namespace ShitHaneul {
 	StackFrame::StackFrame(Function* currentFunction)
-		: m_Top(static_cast<std::size_t>(currentFunction->Info->LocalVariableCount)), m_CurrentFunction(currentFunction) {}
+		: m_Stack(static_cast<std::size_t>(currentFunction->Info->LocalVariableCount + currentFunction->Info->StackOperandCount)),
+		m_Top(static_cast<std::size_t>(currentFunction->Info->LocalVariableCount)), m_CurrentFunction(currentFunction) {
+		const std::uint8_t argCount = currentFunction->JosaMap.GetCount();
+		for (std::uint8_t i = 0; i < argCount; ++i) {
+			m_Stack[static_cast<std::size_t>(i)] = currentFunction->JosaMap[i];
+		}
+	}
 	StackFrame::StackFrame(StackFrame&& stackFrame) noexcept
 		: m_Stack(std::move(stackFrame.m_Stack)), m_Top(stackFrame.m_Top),
 		m_CurrentFunction(stackFrame.m_CurrentFunction), m_CurrentOffset(stackFrame.m_CurrentOffset) {}
@@ -98,6 +105,44 @@ namespace ShitHaneul {
 			case OpCode::LoadGlobal:
 				frame.Push(m_GlobalVariables[funcInfo->GlobalList[static_cast<std::size_t>(intOperand)]]);
 				break;
+
+			case OpCode::Call: {
+				if (const Type type = GetType(frame.GetTop()); type != Type::Function) {
+					RaiseException(offset, InvalidTypeException(u8"함수", typeName(type)));
+					return false;
+				}
+
+				const FunctionConstant target = std::get<FunctionConstant>(frame.GetTop());
+				Function* const newFunc = m_ByteFile.CopyFunction(target.Value);
+				for (std::uint8_t i = 0; i < strListOperand.GetCount(); ++i) {
+					if (strListOperand[i].second == U"_") {
+						const BoundResult result = newFunc->JosaMap.BindConstant(frame.GetTop());
+						if (result != BoundResult::Success) {
+							RaiseException(offset,
+								result == BoundResult::Undefiend ? NoJosaException(/*TODO*/"") :
+								AlreadyBoundException(u8"함수", /*TODO*/""));
+							return false;
+						}
+					} else {
+						const BoundResult result = newFunc->JosaMap.BindConstant(strListOperand[i].second, frame.GetTop());
+						if (result != BoundResult::Success) {
+							RaiseException(offset,
+								result == BoundResult::Undefiend ? UndefinedException(u8"조사", /*TODO*/"") :
+								AlreadyBoundException(u8"조사", /*TODO*/""));
+							return false;
+						}
+					}
+					frame.Pop();
+				}
+
+				if (newFunc->JosaMap.GetUnboundCount()) {
+					frame.Push(FunctionConstant(newFunc));
+				} else {
+					frame.SetCurrentOffset(offset);
+					m_StackTrace.emplace_back(newFunc);
+				}
+				break;
+			}
 			}
 		}
 		return true;
@@ -123,15 +168,25 @@ namespace ShitHaneul {
 		result += u8" 자료형의 값이 주어졌습니다.";
 		return result;
 	}
-	std::string Interpreter::UnboundException(const std::string_view& type, const std::string_view& name) {
+	std::string Interpreter::UndefinedException(const std::string_view& type, const std::string_view& name) {
 		std::string result(type);
 		result += u8" '";
 		result += name;
 		result += u8"'을/를 찾을 수 없습니다.";
 		return result;
 	}
-	std::string Interpreter::UndefinedFunctionException() {
-		return u8"선언은 되었으나 정의되지 않은 함수를 호출할 수 없습니다.";
+	std::string Interpreter::NoJosaException(const std::string_view& name) {
+		std::string result(u8"함수 '");
+		result += name;
+		result += u8"'에는 값을 적용할 수 없습니다.";
+		return result;
+	}
+	std::string Interpreter::AlreadyBoundException(const std::string_view& type, const std::string_view& name) {
+		std::string result(type);
+		result += u8" '";
+		result += name;
+		result += u8"'에는 이미 값이 적용되어 있습니다.";
+		return result;
 	}
 	std::string Interpreter::FieldMismatchException(std::uint8_t expected, std::uint8_t given) {
 		std::string result = u8"구조체에 ";

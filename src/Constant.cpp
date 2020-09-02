@@ -148,24 +148,61 @@ namespace ShitHaneul {
 		}
 	}
 	StringMap::StringMap(const StringMap& stringMap) noexcept
-		: m_Map(stringMap.m_Map) {}
+		: m_Map(stringMap.m_Map), m_BoundCount(stringMap.m_BoundCount) {}
 	StringMap::StringMap(StringMap&& stringMap) noexcept
-		: m_Map(std::move(stringMap.m_Map)) {}
+		: m_Map(std::move(stringMap.m_Map)), m_BoundCount(stringMap.m_BoundCount) {}
 
 	StringMap& StringMap::operator=(const StringMap& stringMap) noexcept {
 		m_Map = stringMap.m_Map;
+		m_BoundCount = stringMap.m_BoundCount;
 		return *this;
 	}
 	StringMap& StringMap::operator=(StringMap&& stringMap) noexcept {
 		m_Map = std::move(stringMap.m_Map);
+		m_BoundCount = stringMap.m_BoundCount;
 		return *this;
 	}
+	Constant StringMap::operator[](std::uint8_t index) const noexcept {
+		return m_Map[static_cast<std::size_t>(index)].second;
+	}
 
-	void StringMap::BindConstant(const std::u32string_view& string, const Constant& constant) {
+	bool StringMap::IsEmpty() const noexcept {
+		return m_Map.empty();
+	}
+	std::uint8_t StringMap::GetCount() const noexcept {
+		return static_cast<std::uint8_t>(m_Map.size());
+	}
+	std::uint8_t StringMap::GetBoundCount() const noexcept {
+		return m_BoundCount;
+	}
+	std::uint8_t StringMap::GetUnboundCount() const noexcept {
+		return GetCount() - GetBoundCount();
+	}
+	BoundResult StringMap::BindConstant(const Constant& constant) {
+		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [](const auto& element) {
+			return !element.second.index();
+		});
+
+		if (iter == m_Map.end()) {
+			if (m_Map.size() == 0) return BoundResult::Undefiend;
+			else return BoundResult::AlreadyBound;
+		}
+
+		iter->second = constant;
+		++m_BoundCount;
+		return BoundResult::Success;
+	}
+	BoundResult StringMap::BindConstant(const std::u32string_view& string, const Constant& constant) {
 		const std::size_t hash = std::hash<std::u32string_view>{}(string);
 		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [string, hash](const auto& element) {
 			return element.first.first == hash && element.first.second == string;
 		});
+
+		if (iter == m_Map.end()) return BoundResult::Undefiend;
+		else if (iter->second.index()) return BoundResult::AlreadyBound;
+
 		iter->second = constant;
+		++m_BoundCount;
+		return BoundResult::Success;
 	}
 }

@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -77,8 +78,9 @@ namespace ShitHaneul {
 	private:
 		void RaiseException(std::uint64_t offset, std::string&& message);
 		static std::string InvalidTypeException(const std::string_view& expected, const std::string_view& given);
-		static std::string UnboundException(const std::string_view& type, const std::string_view& name);
-		static std::string UndefinedFunctionException();
+		static std::string UndefinedException(const std::string_view& type, const std::string_view& name);
+		static std::string NoJosaException(const std::string_view& name);
+		static std::string AlreadyBoundException(const std::string_view& type, const std::string_view& name);
 		static std::string FieldMismatchException(std::uint8_t expected, std::uint8_t given);
 		static std::string DivideByZeroException();
 		static std::string UnaryTypeException(const std::string_view& type, const std::string_view& operation);

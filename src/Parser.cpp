@@ -41,6 +41,11 @@ namespace ShitHaneul {
 	void ByteFile::AddFunction(Function* function) {
 		m_Functions.push_back(function);
 	}
+	Function* ByteFile::CopyFunction(const Function* function) {
+		std::unique_ptr<Function> result(new Function(*function));
+		AddFunction(result.get());
+		return result.release();
+	}
 	const Function* ByteFile::GetRoot() const noexcept {
 		return m_RootFunction;
 	}

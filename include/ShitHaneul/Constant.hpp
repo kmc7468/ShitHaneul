@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cstddef>
 #include <cstdint>
@@ -145,7 +145,7 @@ namespace ShitHaneul {
 		std::is_same_v<T, Function*>, FunctionConstant, std::conditional_t<
 		std::is_same_v<T, StringMap*>, StructureConstant,
 		void
-	>>>>>>;
+		>>>>>>;
 
 	class ConstantList final {
 	private:
@@ -191,9 +191,16 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	enum class BoundResult {
+		Undefiend,
+		AlreadyBound,
+		Success,
+	};
+
 	class StringMap final {
 	private:
 		std::vector<std::pair<std::pair<std::size_t, std::u32string_view>, Constant>> m_Map;
+		std::uint8_t m_BoundCount = 0;
 
 	public:
 		explicit StringMap(const StringList& stringList);
@@ -204,9 +211,15 @@ namespace ShitHaneul {
 	public:
 		StringMap& operator=(const StringMap& stringMap) noexcept;
 		StringMap& operator=(StringMap&& stringMap) noexcept;
+		Constant operator[](std::uint8_t index) const noexcept;
 
 	public:
-		void BindConstant(const std::u32string_view& string, const Constant& constant);
+		bool IsEmpty() const noexcept;
+		std::uint8_t GetCount() const noexcept;
+		std::uint8_t GetBoundCount() const noexcept;
+		std::uint8_t GetUnboundCount() const noexcept;
+		BoundResult BindConstant(const Constant& constant);
+		BoundResult BindConstant(const std::u32string_view& string, const Constant& constant);
 	};
 }
 
