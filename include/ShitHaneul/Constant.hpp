@@ -176,10 +176,12 @@ namespace ShitHaneul {
 
 	public:
 		StringList() noexcept = default;
+		StringList(const StringList& stringList);
 		StringList(StringList&& stringList) noexcept;
 		~StringList() = default;
 
 	public:
+		StringList& operator=(const StringList& stringList);
 		StringList& operator=(StringList&& stringList) noexcept;
 		const std::pair<std::size_t, std::u32string>& operator[](std::uint8_t index) const noexcept;
 
@@ -187,6 +189,7 @@ namespace ShitHaneul {
 		void Add(std::u32string&& string);
 		std::uint8_t GetCount() const noexcept;
 		void Reserve(std::uint8_t count);
+		bool Contains(const std::u32string_view& string) const noexcept;
 	};
 }
 
@@ -212,6 +215,7 @@ namespace ShitHaneul {
 		StringMap& operator=(const StringMap& stringMap) noexcept;
 		StringMap& operator=(StringMap&& stringMap) noexcept;
 		Constant operator[](std::uint8_t index) const noexcept;
+		Constant operator[](const std::u32string_view& string) const noexcept;
 
 	public:
 		bool IsEmpty() const noexcept;

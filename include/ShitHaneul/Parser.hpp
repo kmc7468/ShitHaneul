@@ -16,6 +16,8 @@ namespace ShitHaneul {
 		std::vector<Function*> m_Functions;
 		Function* m_RootFunction = nullptr;
 
+		std::vector<StringMap*> m_Structures;
+
 	public:
 		ByteFile() noexcept = default;
 		ByteFile(ByteFile&& byteFile) noexcept;
@@ -33,6 +35,9 @@ namespace ShitHaneul {
 		const Function* GetRoot() const noexcept;
 		Function* GetRoot() noexcept;
 		void SetRoot(Function* function) noexcept;
+
+		void AddStructure(StringMap* structure);
+		StringMap* CopyStructure(const StringMap* structure);
 	};
 }
 

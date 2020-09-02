@@ -10,7 +10,8 @@
 namespace ShitHaneul {
 	ByteFile::ByteFile(ByteFile&& byteFile) noexcept
 		: m_FunctionInfos(std::move(byteFile.m_FunctionInfos)), m_Functions(std::move(byteFile.m_Functions)),
-		m_RootFunction(byteFile.m_RootFunction) {}
+		m_RootFunction(byteFile.m_RootFunction),
+		m_Structures(std::move(byteFile.m_Structures)) {}
 	ByteFile::~ByteFile() {
 		Clear();
 	}
@@ -19,6 +20,8 @@ namespace ShitHaneul {
 		m_FunctionInfos = std::move(byteFile.m_FunctionInfos);
 		m_Functions = std::move(byteFile.m_Functions);
 		m_RootFunction = byteFile.m_RootFunction;
+
+		m_Structures = std::move(byteFile.m_Structures);
 		return *this;
 	}
 
@@ -29,6 +32,7 @@ namespace ShitHaneul {
 
 		std::for_each(m_FunctionInfos.begin(), m_FunctionInfos.end(), deleter);
 		std::for_each(m_Functions.begin(), m_Functions.end(), deleter);
+		std::for_each(m_Structures.begin(), m_Structures.end(), deleter);
 	}
 
 	Function* ByteFile::RegisterFunction(FunctionInfo* functionInfo) {
@@ -54,6 +58,15 @@ namespace ShitHaneul {
 	}
 	void ByteFile::SetRoot(Function* function) noexcept {
 		m_RootFunction = function;
+	}
+
+	void ByteFile::AddStructure(StringMap* structure) {
+		m_Structures.push_back(structure);
+	}
+	StringMap* ByteFile::CopyStructure(const StringMap* structure) {
+		std::unique_ptr<StringMap> result(new StringMap(*structure));
+		AddStructure(result.get());
+		return result.release();
 	}
 }
 

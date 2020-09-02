@@ -115,9 +115,15 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	StringList::StringList(const StringList& stringList)
+		: m_List(stringList.m_List) {}
 	StringList::StringList(StringList&& stringList) noexcept
 		: m_List(std::move(stringList.m_List)) {}
 
+	StringList& StringList::operator=(const StringList& stringList) {
+		m_List = stringList.m_List;
+		return *this;
+	}
 	StringList& StringList::operator=(StringList&& stringList) noexcept {
 		m_List = std::move(stringList.m_List);
 		return *this;
@@ -135,6 +141,12 @@ namespace ShitHaneul {
 	}
 	void StringList::Reserve(std::uint8_t count) {
 		m_List.reserve(static_cast<std::size_t>(count));
+	}
+	bool StringList::Contains(const std::u32string_view& string) const noexcept {
+		const std::size_t hash = std::hash<std::u32string_view>{}(string);
+		return std::find_if(m_List.begin(), m_List.end(), [string, hash](const auto& element) {
+			return element.first == hash && element.second == string;
+		}) != m_List.end();
 	}
 }
 
@@ -164,6 +176,13 @@ namespace ShitHaneul {
 	}
 	Constant StringMap::operator[](std::uint8_t index) const noexcept {
 		return m_Map[static_cast<std::size_t>(index)].second;
+	}
+	Constant StringMap::operator[](const std::u32string_view& string) const noexcept {
+		const std::size_t hash = std::hash<std::u32string_view>{}(string);
+		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [string, hash](const auto& element) {
+			return element.first.first == hash && element.first.second == string;
+		});
+		return iter->second;
 	}
 
 	bool StringMap::IsEmpty() const noexcept {

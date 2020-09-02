@@ -1,5 +1,6 @@
 ﻿#include <ShitHaneul/Interpreter.hpp>
 
+#include <memory>
 #include <utility>
 #include <variant>
 
@@ -141,6 +142,47 @@ namespace ShitHaneul {
 					frame.SetCurrentOffset(offset);
 					m_StackTrace.emplace_back(newFunc);
 				}
+				break;
+			}
+
+			case OpCode::AddStruct:
+				m_Structures[strOperand] = strListOperand;
+				break;
+
+			case OpCode::MakeStruct: {
+				const StringList& fields = m_Structures[strOperand];
+				const std::uint8_t expectedFieldCount = fields.GetCount();
+				const std::uint8_t givenFieldCount = strListOperand.GetCount();
+				if (expectedFieldCount != givenFieldCount) {
+					RaiseException(offset, FieldMismatchException(expectedFieldCount, givenFieldCount));
+					return false;
+				}
+
+				std::unique_ptr<StringMap> structure(new StringMap(fields));
+				for (std::uint8_t i = 0; i < givenFieldCount; ++i) {
+					if (!fields.Contains(strListOperand[i].second)) {
+						RaiseException(offset, UndefinedException(u8"필드", /*TODO*/""));
+						return false;
+					}
+					structure->BindConstant(frame.GetTop());
+					frame.Pop();
+				}
+
+				frame.Push(StructureConstant(structure.get()));
+				m_ByteFile.AddStructure(structure.get());
+				structure.release();
+				break;
+			}
+
+			case OpCode::GetField: {
+				if (const Type type = GetType(frame.GetTop()); type != Type::Structure) {
+					RaiseException(offset, InvalidTypeException(u8"구조체", typeName(type)));
+					return false;
+				}
+
+				const StructureConstant target = std::get<StructureConstant>(frame.GetTop());
+				frame.Pop();
+				frame.Push((*target.Value)[strOperand]);
 				break;
 			}
 			}
