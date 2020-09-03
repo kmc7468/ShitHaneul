@@ -31,10 +31,13 @@ namespace ShitHaneul {
 	public:
 		void Push(const Constant& constant) noexcept;
 		void Pop() noexcept;
-		const Constant& GetTop() const noexcept;
+		Constant& GetTop() noexcept;
+		Constant& GetUnderTop() noexcept;
 
 		void Store(std::uint32_t index);
+		void StoreDirect(std::uint32_t index, const Constant& constant);
 		void Load(std::uint32_t index);
+		Constant& LoadDirect(std::uint32_t index);
 
 		const Function* GetCurrentFunction() const noexcept;
 		Function* GetCurrentFunction() noexcept;

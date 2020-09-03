@@ -32,15 +32,33 @@ namespace ShitHaneul {
 	void StackFrame::Pop() noexcept {
 		--m_Top;
 	}
-	const Constant& StackFrame::GetTop() const noexcept {
+	Constant& StackFrame::GetTop() noexcept {
 		return m_Stack[m_Top - 1];
+	}
+	Constant& StackFrame::GetUnderTop() noexcept {
+		return m_Stack[m_Top - 2];
 	}
 
 	void StackFrame::Store(std::uint32_t index) {
-		m_Stack[static_cast<std::size_t>(index)] = m_Stack[--m_Top];
+		StoreDirect(index, m_Stack[--m_Top]);
+	}
+	void StackFrame::StoreDirect(std::uint32_t index, const Constant& constant) {
+		Constant& variable = m_Stack[static_cast<std::size_t>(index)];
+		if (GetType(constant) == Type::Function && std::get<FunctionConstant>(constant).IsForwardDeclared) {
+			const Function* const func = std::get<FunctionConstant>(constant).Value;
+			Function* const target = std::get<FunctionConstant>(variable).Value;
+			target->FreeVariableList = func->FreeVariableList;
+			target->Info = func->Info;
+			target->JosaMap = func->JosaMap;
+		} else {
+			variable = constant;
+		}
 	}
 	void StackFrame::Load(std::uint32_t index) {
-		m_Stack[m_Top++] = m_Stack[static_cast<std::size_t>(index)];
+		m_Stack[m_Top++] = LoadDirect(index);
+	}
+	Constant& StackFrame::LoadDirect(std::uint32_t index) {
+		return m_Stack[static_cast<std::size_t>(index)];
 	}
 
 	const Function* StackFrame::GetCurrentFunction() const noexcept {
@@ -55,6 +73,15 @@ namespace ShitHaneul {
 	void StackFrame::SetCurrentOffset(std::uint64_t newCurrentOffset) noexcept {
 		m_CurrentOffset = newCurrentOffset;
 	}
+}
+
+namespace {
+	template<typename... F>
+	struct Overload : F... {
+		using F::operator()...;
+	};
+	template<typename... F>
+	Overload(F...) -> Overload<F...>;
 }
 
 namespace ShitHaneul {
@@ -73,6 +100,7 @@ namespace ShitHaneul {
 #define intOperand std::get<std::uint32_t>(instruction.Operand)
 #define strOperand std::get<std::u32string>(instruction.Operand)
 #define strListOperand std::get<StringList>(instruction.Operand)
+#define freeVarListOperand std::get<FreeVariableList>(instruction.Operand)
 #define typeName(type) TypeName[static_cast<std::uint8_t>(type)]
 
 		for (std::uint64_t offset = 0; offset < funcInfo->InstructionList.GetCount(); ++offset) {
@@ -108,12 +136,12 @@ namespace ShitHaneul {
 				break;
 
 			case OpCode::Call: {
-				if (const Type type = GetType(frame.GetTop()); type != Type::Function) {
+				if (const auto type = GetType(frame.GetTop()); type != Type::Function) {
 					RaiseException(offset, InvalidTypeException(u8"함수", typeName(type)));
 					return false;
 				}
 
-				const FunctionConstant target = std::get<FunctionConstant>(frame.GetTop());
+				const auto target = std::get<FunctionConstant>(frame.GetTop());
 				Function* const newFunc = m_ByteFile.CopyFunction(target.Value);
 				for (std::uint8_t i = 0; i < strListOperand.GetCount(); ++i) {
 					if (strListOperand[i].second == U"_") {
@@ -140,6 +168,7 @@ namespace ShitHaneul {
 					frame.Push(FunctionConstant(newFunc));
 				} else {
 					frame.SetCurrentOffset(offset);
+					offset = static_cast<std::uint64_t>(-1);
 					m_StackTrace.emplace_back(newFunc);
 				}
 				break;
@@ -175,14 +204,282 @@ namespace ShitHaneul {
 			}
 
 			case OpCode::GetField: {
-				if (const Type type = GetType(frame.GetTop()); type != Type::Structure) {
+				if (const auto type = GetType(frame.GetTop()); type != Type::Structure) {
 					RaiseException(offset, InvalidTypeException(u8"구조체", typeName(type)));
 					return false;
 				}
 
-				const StructureConstant target = std::get<StructureConstant>(frame.GetTop());
+				const auto target = std::get<StructureConstant>(frame.GetTop());
 				frame.Pop();
 				frame.Push((*target.Value)[strOperand]);
+				break;
+			}
+
+			case OpCode::Jmp:
+				offset = intOperand - 1;
+				break;
+
+			case OpCode::PopJmpIfFalse: {
+				if (const auto type = GetType(frame.GetTop()); type != Type::Boolean) {
+					RaiseException(offset, InvalidTypeException(u8"부울", typeName(type)));
+					return false;
+				}
+
+				const auto target = std::get<BooleanConstant>(frame.GetTop());
+				if (!target.Value) {
+					offset = intOperand - 1;
+				}
+				frame.Pop();
+				break;
+			}
+
+			case OpCode::FreeVar: {
+				auto& target = std::get<FunctionConstant>(frame.GetTop());
+				const auto count = static_cast<std::uint8_t>(freeVarListOperand.size());
+				for (std::uint8_t i = 0; i < count; ++i) {
+					const auto [type, index] = freeVarListOperand[i];
+					if (type == VariableType::Local) {
+						target.Value->FreeVariableList.push_back(frame.LoadDirect(index));
+					} else {
+						target.Value->FreeVariableList.push_back(frame.GetCurrentFunction()->FreeVariableList[static_cast<std::size_t>(index)]);
+					}
+				}
+				break;
+			}
+
+			case OpCode::Add: {
+				Constant& top = frame.GetTop();
+				Constant& underTop = frame.GetUnderTop();
+				const auto topType = GetType(top), underTopType = GetType(underTop);
+				if (underTopType == Type::Integer) {
+					if (topType == Type::Integer) {
+						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value + std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value + std::get<RealConstant>(top).Value));
+					} else goto addError;
+				} else if (underTopType == Type::Real) {
+					if (topType == Type::Integer) {
+						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value + std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value + std::get<RealConstant>(top).Value));
+					} else goto addError;
+				} else {
+				addError:
+					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"더하기"));
+					return false;
+				}
+				break;
+			}
+
+			case OpCode::Subtract: {
+				Constant& top = frame.GetTop();
+				Constant& underTop = frame.GetUnderTop();
+				const auto topType = GetType(top), underTopType = GetType(underTop);
+				if (underTopType == Type::Integer) {
+					if (topType == Type::Integer) {
+						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value - std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value - std::get<RealConstant>(top).Value));
+					} else goto subError;
+				} else if (underTopType == Type::Real) {
+					if (topType == Type::Integer) {
+						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value - std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value - std::get<RealConstant>(top).Value));
+					} else goto subError;
+				} else {
+				subError:
+					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"빼기"));
+					return false;
+				}
+				break;
+			}
+
+			case OpCode::Multiply: {
+				Constant& top = frame.GetTop();
+				Constant& underTop = frame.GetUnderTop();
+				const auto topType = GetType(top), underTopType = GetType(underTop);
+				if (underTopType == Type::Integer) {
+					if (topType == Type::Integer) {
+						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value * std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value * std::get<RealConstant>(top).Value));
+					} else goto mulError;
+				} else if (underTopType == Type::Real) {
+					if (topType == Type::Integer) {
+						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value * std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value * std::get<RealConstant>(top).Value));
+					} else goto mulError;
+				} else {
+				mulError:
+					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"곱하기"));
+					return false;
+				}
+				break;
+			}
+
+			case OpCode::Divide: {
+				Constant& top = frame.GetTop();
+				Constant& underTop = frame.GetUnderTop();
+				const auto topType = GetType(top), underTopType = GetType(underTop);
+				if (underTopType == Type::Integer) {
+					if (topType == Type::Integer) {
+						if (std::get<IntegerConstant>(top).Value == 0) goto divZeroError;
+						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value / std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						if (std::get<RealConstant>(top).Value == 0) goto divZeroError;
+						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value / std::get<RealConstant>(top).Value));
+					} else goto divError;
+				} else if (underTopType == Type::Real) {
+					if (topType == Type::Integer) {
+						if (std::get<IntegerConstant>(top).Value == 0) goto divZeroError;
+						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value / std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						if (std::get<RealConstant>(top).Value == 0) {
+						divZeroError:
+							RaiseException(offset, DivideByZeroException());
+							return false;
+						}
+						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value / std::get<RealConstant>(top).Value));
+					} else goto divError;
+				} else {
+				divError:
+					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"나누기"));
+					return false;
+				}
+				break;
+			}
+
+			case OpCode::Mod: {
+				Constant& top = frame.GetTop();
+				Constant& underTop = frame.GetUnderTop();
+				if (const auto topType = GetType(top), underTopType = GetType(underTop); topType != underTopType || topType != Type::Integer) {
+					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"나머지"));
+					return false;
+				}
+
+				if (std::get<IntegerConstant>(top).Value == 0) {
+					RaiseException(offset, DivideByZeroException());
+					return false;
+				}
+				frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value % std::get<IntegerConstant>(top).Value));
+				break;
+			}
+
+			case OpCode::Equal: {
+				Constant& top = frame.GetTop();
+				Constant& underTop = frame.GetUnderTop();
+				const auto topType = GetType(top), underTopType = GetType(underTop);
+				if (underTopType == Type::Function) {
+					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"비교"));
+					return false;
+				} else {
+					frame.Push(BooleanConstant(Equal(underTop, top)));
+				}
+				break;
+			}
+
+			case OpCode::LessThan : {
+				Constant& top = frame.GetTop();
+				Constant& underTop = frame.GetUnderTop();
+				const auto topType = GetType(top), underTopType = GetType(underTop);
+				if (underTopType == Type::Integer) {
+					if (topType == Type::Integer) {
+						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value < std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value < std::get<RealConstant>(top).Value));
+					} else goto lessThanError;
+				} else if (underTopType == Type::Real) {
+					if (topType == Type::Integer) {
+						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value < std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value < std::get<RealConstant>(top).Value));
+					} else goto lessThanError;
+				} else {
+				lessThanError:
+					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"대소 비교"));
+					return false;
+				}
+				break;
+			}
+
+			case OpCode::GreaterThan: {
+				Constant& top = frame.GetTop();
+				Constant& underTop = frame.GetUnderTop();
+				const auto topType = GetType(top), underTopType = GetType(underTop);
+				if (underTopType == Type::Integer) {
+					if (topType == Type::Integer) {
+						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value > std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value > std::get<RealConstant>(top).Value));
+					} else goto greaterThanError;
+				} else if (underTopType == Type::Real) {
+					if (topType == Type::Integer) {
+						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value > std::get<IntegerConstant>(top).Value));
+					} else if (topType == Type::Real) {
+						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value > std::get<RealConstant>(top).Value));
+					} else goto greaterThanError;
+				} else {
+				greaterThanError:
+					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"대소 비교"));
+					return false;
+				}
+				break;
+			}
+
+			case OpCode::Negate: {
+				Constant& top = frame.GetTop();
+				if (!std::visit(Overload{
+					[](IntegerConstant& constant) {
+						constant.Value = -constant.Value;
+						return true;
+					},
+					[](RealConstant& constant) {
+						constant.Value = -constant.Value;
+						return true;
+					},
+					[&](auto& constant) {
+						RaiseException(offset, UnaryTypeException(typeName(GetType(constant)), u8"부호 반전"));
+						return false;
+					}
+				}, top)) return false;
+				break;
+			}
+
+			case OpCode::LogicNot: {
+				Constant& top = frame.GetTop();
+				if (const auto type = GetType(top); type != Type::Boolean) {
+					RaiseException(offset, UnaryTypeException(typeName(type), u8"논리 부정"));
+					return false;
+				}
+
+				auto& operand = std::get<BooleanConstant>(top);
+				operand.Value = !operand.Value;
+				break;
+			}
+
+			case OpCode::LogicAnd: {
+				Constant& top = frame.GetTop();
+				Constant& underTop = frame.GetUnderTop();
+				if (const auto topType = GetType(top), underTopType = GetType(underTop); topType != underTopType || topType != Type::Boolean) {
+					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"그리고"));
+					return false;
+				}
+
+				frame.Push(BooleanConstant(std::get<BooleanConstant>(underTop).Value && std::get<BooleanConstant>(top).Value));
+				break;
+			}
+
+			case OpCode::LogicOr: {
+				Constant& top = frame.GetTop();
+				Constant& underTop = frame.GetUnderTop();
+				if (const auto topType = GetType(top), underTopType = GetType(underTop); topType != underTopType || topType != Type::Boolean) {
+					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"또는"));
+					return false;
+				}
+
+				frame.Push(BooleanConstant(std::get<BooleanConstant>(underTop).Value || std::get<BooleanConstant>(top).Value));
 				break;
 			}
 			}

@@ -98,10 +98,12 @@ namespace ShitHaneul {
 	class FunctionConstant final {
 	public:
 		Function* Value = nullptr;
+		bool IsForwardDeclared = false;
 
 	public:
 		FunctionConstant() noexcept = default;
 		FunctionConstant(Function* value) noexcept;
+		FunctionConstant(Function* value, bool isForwardDeclared) noexcept;
 		FunctionConstant(const FunctionConstant& constant) noexcept;
 		~FunctionConstant() = default;
 
@@ -135,6 +137,7 @@ namespace ShitHaneul {
 		StructureConstant>;
 
 	Type GetType(const Constant& constant) noexcept;
+	bool Equal(const Constant& lhs, const Constant& rhs) noexcept;
 
 	template<typename T>
 	using MakeConstantClass = std::conditional_t<
@@ -145,7 +148,7 @@ namespace ShitHaneul {
 		std::is_same_v<T, Function*>, FunctionConstant, std::conditional_t<
 		std::is_same_v<T, StringMap*>, StructureConstant,
 		void
-		>>>>>>;
+	>>>>>>;
 
 	class ConstantList final {
 	private:
@@ -214,6 +217,8 @@ namespace ShitHaneul {
 	public:
 		StringMap& operator=(const StringMap& stringMap) noexcept;
 		StringMap& operator=(StringMap&& stringMap) noexcept;
+		bool operator==(const StringMap& other) const noexcept;
+		bool operator!=(const StringMap& other) const noexcept;
 		Constant operator[](std::uint8_t index) const noexcept;
 		Constant operator[](const std::u32string_view& string) const noexcept;
 

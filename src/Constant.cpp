@@ -63,6 +63,8 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	FunctionConstant::FunctionConstant(Function* value) noexcept
 		: Value(value) {}
+	FunctionConstant::FunctionConstant(Function* value, bool isForwardDeclared) noexcept
+		: Value(value), IsForwardDeclared(isForwardDeclared) {}
 	FunctionConstant::FunctionConstant(const FunctionConstant& constant) noexcept
 		: Value(constant.Value) {}
 
@@ -88,6 +90,28 @@ namespace ShitHaneul {
 	Type GetType(const Constant& constant) noexcept {
 		assert(constant.index() > 0);
 		return static_cast<Type>(constant.index() - 1);
+	}
+	bool Equal(const Constant& lhs, const Constant& rhs) noexcept {
+		const auto lhsType = GetType(lhs), rhsType = GetType(rhs);
+		switch (lhsType) {
+		case Type::None: return lhsType == rhsType;
+		case Type::Integer:
+			if (rhsType == Type::Integer) return std::get<IntegerConstant>(lhs).Value == std::get<IntegerConstant>(rhs).Value;
+			else if (rhsType == Type::Real) return std::get<IntegerConstant>(lhs).Value == std::get<RealConstant>(rhs).Value;
+			else return false;
+		case Type::Real:
+			if (rhsType == Type::Integer) return std::get<RealConstant>(lhs).Value == std::get<IntegerConstant>(rhs).Value;
+			else if (rhsType == Type::Real) return std::get<RealConstant>(lhs).Value == std::get<RealConstant>(rhs).Value;
+			else return false;
+		case Type::Boolean:
+			if (rhsType == Type::Boolean) return std::get<BooleanConstant>(lhs).Value == std::get<BooleanConstant>(rhs).Value;
+			else return false;
+		case Type::Character:
+			if (rhsType == Type::Character) return std::get<CharacterConstant>(lhs).Value == std::get<CharacterConstant>(rhs).Value;
+			else return false;
+		case Type::Function: return false;
+		case Type::Structure: return lhsType == rhsType && *std::get<StructureConstant>(lhs).Value == *std::get<StructureConstant>(rhs).Value;
+		}
 	}
 }
 
@@ -173,6 +197,18 @@ namespace ShitHaneul {
 		m_Map = std::move(stringMap.m_Map);
 		m_BoundCount = stringMap.m_BoundCount;
 		return *this;
+	}
+	bool StringMap::operator==(const StringMap& other) const noexcept {
+		if (m_Map.size() != other.m_Map.size() || m_BoundCount != other.m_BoundCount) return false;
+		for (std::size_t i = 0; i < m_Map.size(); ++i) {
+			if (m_Map[i].first.first != other.m_Map[i].first.first ||
+				m_Map[i].first.second != other.m_Map[i].first.second) return false;
+			else if (!Equal(m_Map[i].second, other.m_Map[i].second)) return false;
+		}
+		return true;
+	}
+	bool StringMap::operator!=(const StringMap& other) const noexcept {
+		return !(*this == other);
 	}
 	Constant StringMap::operator[](std::uint8_t index) const noexcept {
 		return m_Map[static_cast<std::size_t>(index)].second;
