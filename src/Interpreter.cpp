@@ -103,7 +103,9 @@ namespace ShitHaneul {
 #define freeVarListOperand std::get<FreeVariableList>(instruction.Operand)
 #define typeName(type) TypeName[static_cast<std::uint8_t>(type)]
 
-		for (std::uint64_t offset = 0; offset < funcInfo->InstructionList.GetCount(); ++offset) {
+		std::uint64_t offset = 0;
+	start:
+		for (; offset < funcInfo->InstructionList.GetCount(); ++offset) {
 			const Instruction& instruction = funcInfo->InstructionList[offset];
 			switch (instruction.OpCode) {
 			case OpCode::Push:
@@ -483,6 +485,12 @@ namespace ShitHaneul {
 				break;
 			}
 			}
+		}
+
+		if (m_StackTrace.size() > 1) {
+			offset = m_StackTrace[m_StackTrace.size() - 2].GetCurrentOffset() + 1;
+			m_StackTrace.erase(m_StackTrace.end() - 1);
+			goto start;
 		}
 		return true;
 	}
