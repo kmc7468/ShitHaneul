@@ -1,4 +1,4 @@
-#include <ShitHaneul/Interpreter.hpp>
+﻿#include <ShitHaneul/Interpreter.hpp>
 
 #include <ShitHaneul/Memory.hpp>
 
@@ -10,8 +10,8 @@
 
 namespace ShitHaneul {
 	StackFrame::StackFrame(Function* currentFunction)
-		: m_Stack(static_cast<std::size_t>(currentFunction->Info->LocalVariableCount + currentFunction->Info->StackOperandCount)),
-		m_Top(static_cast<std::size_t>(currentFunction->Info->LocalVariableCount)), m_CurrentFunction(currentFunction) {
+		: m_Stack(static_cast<std::size_t>(currentFunction->Info->LocalVariableCount + currentFunction->Info->StackOperandCount + currentFunction->JosaMap.GetCount())),
+		m_Top(static_cast<std::size_t>(currentFunction->Info->LocalVariableCount + currentFunction->JosaMap.GetCount())), m_CurrentFunction(currentFunction) {
 		const std::uint8_t argCount = currentFunction->JosaMap.GetCount();
 		for (std::uint8_t i = 0; i < argCount; ++i) {
 			m_Stack[static_cast<std::size_t>(i)] = currentFunction->JosaMap[i].second;
@@ -158,7 +158,8 @@ namespace ShitHaneul {
 					RaiseException(offset, UndefinedFunctionException());
 					return false;
 				}
-
+				frame.Pop();
+				
 				for (std::uint8_t i = 0; i < strListOperand.GetCount(); ++i) {
 					if (strListOperand[i].second == U"_") {
 						const BoundResult result = newFunc->JosaMap.BindConstant(frame.GetTop());
