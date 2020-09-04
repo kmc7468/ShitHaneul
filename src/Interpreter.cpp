@@ -197,14 +197,16 @@ namespace ShitHaneul {
 				break;
 			}
 
-			case OpCode::AddStruct:
-				m_Structures[strOperand] = strListOperand;
+			case OpCode::AddStruct: {
+				const auto& [name, fields] = std::get<std::pair<std::u32string, StringList>>(instruction.Operand);
+				m_Structures[name] = fields;
 				break;
+			}
 
 			case OpCode::MakeStruct: {
-				const StringList& fields = m_Structures[strOperand];
+				const auto& [name, fields] = std::get<std::pair<std::u32string, StringList>>(instruction.Operand);
 				const std::uint8_t expectedFieldCount = fields.GetCount();
-				const std::uint8_t givenFieldCount = strListOperand.GetCount();
+				const std::uint8_t givenFieldCount = fields.GetCount();
 				if (expectedFieldCount != givenFieldCount) {
 					RaiseException(offset, FieldMismatchException(expectedFieldCount, givenFieldCount));
 					return false;
@@ -212,8 +214,8 @@ namespace ShitHaneul {
 
 				std::unique_ptr<StringMap> structure(new StringMap(fields));
 				for (std::uint8_t i = 0; i < givenFieldCount; ++i) {
-					if (!fields.Contains(strListOperand[i].second)) {
-						RaiseException(offset, UndefinedException(u8"필드", EncodeUTF32ToUTF8(strListOperand[i].second)));
+					if (!fields.Contains(fields[i].second)) {
+						RaiseException(offset, UndefinedException(u8"필드", EncodeUTF32ToUTF8(fields[i].second)));
 						return false;
 					}
 					structure->BindConstant(frame.GetTop());
