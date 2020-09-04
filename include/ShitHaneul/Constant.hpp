@@ -15,14 +15,14 @@ namespace ShitHaneul {
 		None,
 		Integer,
 		Real,
-		Boolean,
 		Character,
+		Boolean,
 		Function,
 		Structure,
 	};
 
 	static constexpr std::string_view TypeName[] = {
-		"없음", "정수", "실수", "부울", "문자", "함수", "구조체"
+		u8"없음", u8"정수", u8"실수",  u8"문자", u8"부울", u8"함수", u8"구조체"
 	};
 }
 
@@ -68,20 +68,6 @@ namespace ShitHaneul {
 		RealConstant& operator=(const RealConstant& constant) noexcept;
 	};
 
-	class BooleanConstant final {
-	public:
-		bool Value = false;
-
-	public:
-		BooleanConstant() noexcept = default;
-		BooleanConstant(bool value) noexcept;
-		BooleanConstant(const BooleanConstant& constant) noexcept;
-		~BooleanConstant() = default;
-
-	public:
-		BooleanConstant& operator=(const BooleanConstant& constant) noexcept;
-	};
-
 	class CharacterConstant final {
 	public:
 		char32_t Value = '\0';
@@ -94,6 +80,20 @@ namespace ShitHaneul {
 
 	public:
 		CharacterConstant& operator=(const CharacterConstant& constant) noexcept;
+	};
+
+	class BooleanConstant final {
+	public:
+		bool Value = false;
+
+	public:
+		BooleanConstant() noexcept = default;
+		BooleanConstant(bool value) noexcept;
+		BooleanConstant(const BooleanConstant& constant) noexcept;
+		~BooleanConstant() = default;
+
+	public:
+		BooleanConstant& operator=(const BooleanConstant& constant) noexcept;
 	};
 
 	class FunctionConstant final {
@@ -132,8 +132,8 @@ namespace ShitHaneul {
 		NoneConstant,
 		IntegerConstant,
 		RealConstant,
-		BooleanConstant,
 		CharacterConstant,
+		BooleanConstant,
 		FunctionConstant,
 		StructureConstant>;
 
@@ -145,8 +145,8 @@ namespace ShitHaneul {
 	using MakeConstantClass = std::conditional_t<
 		std::is_same_v<T, std::int64_t>, IntegerConstant, std::conditional_t<
 		std::is_same_v<T, double>, RealConstant, std::conditional_t<
-		std::is_same_v<T, bool>, BooleanConstant, std::conditional_t<
 		std::is_same_v<T, char32_t>, CharacterConstant, std::conditional_t<
+		std::is_same_v<T, bool>, BooleanConstant, std::conditional_t<
 		std::is_same_v<T, Function*>, FunctionConstant, std::conditional_t<
 		std::is_same_v<T, StringMap*>, StructureConstant,
 		void

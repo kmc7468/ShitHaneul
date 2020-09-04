@@ -37,24 +37,24 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	BooleanConstant::BooleanConstant(bool value) noexcept
-		: Value(value) {}
-	BooleanConstant::BooleanConstant(const BooleanConstant& constant) noexcept
-		: Value(constant.Value) {}
-
-	BooleanConstant& BooleanConstant::operator=(const BooleanConstant& constant) noexcept {
-		Value = constant.Value;
-		return *this;
-	}
-}
-
-namespace ShitHaneul {
 	CharacterConstant::CharacterConstant(char32_t value) noexcept
 		: Value(value) {}
 	CharacterConstant::CharacterConstant(const CharacterConstant& constant) noexcept
 		: Value(constant.Value) {}
 
 	CharacterConstant& CharacterConstant::operator=(const CharacterConstant& constant) noexcept {
+		Value = constant.Value;
+		return *this;
+	}
+}
+
+namespace ShitHaneul {
+	BooleanConstant::BooleanConstant(bool value) noexcept
+		: Value(value) {}
+	BooleanConstant::BooleanConstant(const BooleanConstant& constant) noexcept
+		: Value(constant.Value) {}
+
+	BooleanConstant& BooleanConstant::operator=(const BooleanConstant& constant) noexcept {
 		Value = constant.Value;
 		return *this;
 	}

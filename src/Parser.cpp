@@ -173,12 +173,12 @@ namespace ShitHaneul {
 				result.Add(ReadScalar<double>());
 				break;
 
-			case Type::Boolean:
-				result.Add(ReadScalar<bool>());
-				break;
-
 			case Type::Character:
 				result.Add(ReadCharacter());
+				break;
+
+			case Type::Boolean:
+				result.Add(ReadScalar<bool>());
 				break;
 
 			case Type::Function:
