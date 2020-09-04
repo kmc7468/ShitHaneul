@@ -60,6 +60,9 @@ namespace ShitHaneul {
 		m_RootFunction = function;
 	}
 
+	void ByteFile::AllocateStructures(std::size_t required) {
+		m_Structures.reserve(m_Structures.size() + required);
+	}
 	void ByteFile::AddStructure(StringMap* structure) {
 		m_Structures.push_back(structure);
 	}

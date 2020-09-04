@@ -1,6 +1,7 @@
 ﻿#include <ShitHaneul/Interpreter.hpp>
 
 #include <memory>
+#include <random>
 #include <utility>
 #include <variant>
 
@@ -10,7 +11,7 @@ namespace ShitHaneul {
 		m_Top(static_cast<std::size_t>(currentFunction->Info->LocalVariableCount)), m_CurrentFunction(currentFunction) {
 		const std::uint8_t argCount = currentFunction->JosaMap.GetCount();
 		for (std::uint8_t i = 0; i < argCount; ++i) {
-			m_Stack[static_cast<std::size_t>(i)] = currentFunction->JosaMap[i];
+			m_Stack[static_cast<std::size_t>(i)] = currentFunction->JosaMap[i].second;
 		}
 	}
 	StackFrame::StackFrame(StackFrame&& stackFrame) noexcept
@@ -92,6 +93,8 @@ namespace ShitHaneul {
 		m_StackTrace.emplace_back(m_ByteFile.GetRoot());
 		m_GlobalVariables.clear();
 		m_Structures.clear();
+
+		RegisterBuiltinFunctions();
 	}
 	bool Interpreter::Interpret() {
 #define frame m_StackTrace.back()
@@ -213,8 +216,15 @@ namespace ShitHaneul {
 
 				const auto target = std::get<StructureConstant>(frame.GetTop());
 				frame.Pop();
-				frame.Push((*target.Value)[strOperand]);
-				break;
+
+				const std::optional<Constant> field = (*target.Value)[strOperand];
+				if (field) {
+					frame.Push(*field);
+					break;
+				} else {
+					RaiseException(offset, UndefinedException(u8"필드", /*TODO*/""));
+					return false;
+				}
 			}
 
 			case OpCode::Jmp:
@@ -499,6 +509,99 @@ namespace ShitHaneul {
 	}
 	const std::vector<StackFrame>& Interpreter::GetStackTrace() const noexcept {
 		return m_StackTrace;
+	}
+
+	void Interpreter::RegisterBuiltinFunction(const std::u32string& name, StringList&& josaList,
+		std::function<Constant(std::uint64_t, const std::vector<Constant>&)>&& builtinFunction) {
+		std::unique_ptr<FunctionInfo> function(new FunctionInfo(std::move(josaList), std::move(builtinFunction)));
+		m_GlobalVariables[name] = FunctionConstant(m_ByteFile.RegisterFunction(function.get()));
+		function.release();
+	}
+	void Interpreter::RegisterBuiltinFunctions() {
+		using namespace std::string_literals;
+		RegisterBuiltinFunction(U"문자열화하다", { { U"을"s } }, [&](std::uint64_t, const std::vector<Constant>& arguments) -> Constant {
+			return ConvertStringToList(ToString(arguments[0]));
+		});
+		RegisterBuiltinFunction(U"정수화하다", { { U"을"s } }, [&](std::uint64_t offset, const std::vector<Constant>& arguments) -> Constant {
+			const auto type = GetType(arguments[0]);
+			switch (type) {
+			case Type::Integer: return arguments[0];
+			case Type::Real: return IntegerConstant(static_cast<std::int64_t>(std::get<RealConstant>(arguments[0]).Value));
+			case Type::Character: return IntegerConstant(static_cast<std::int64_t>(std::get<CharacterConstant>(arguments[0]).Value));
+			case Type::Structure: return IntegerConstant(/*TODO*/0);
+			default:
+				RaiseException(offset, InvalidTypeException(u8"정수화할 수 있는", typeName(type)));
+				return std::monostate();
+			}
+		});
+		RegisterBuiltinFunction(U"실수화하다", { { U"을"s } }, [&](std::uint64_t offset, const std::vector<Constant>& arguments) -> Constant {
+			const auto type = GetType(arguments[0]);
+			switch (type) {
+			case Type::Integer: return RealConstant(static_cast<double>(std::get<IntegerConstant>(arguments[0]).Value));
+			case Type::Real: return arguments[0];
+			case Type::Character: return RealConstant(static_cast<double>(std::get<CharacterConstant>(arguments[0]).Value));
+			case Type::Structure: return RealConstant(/*TODO*/0);
+			default:
+				RaiseException(offset, InvalidTypeException(u8"실수화할 수 있는", typeName(type)));
+				return std::monostate();
+			}
+		});
+		RegisterBuiltinFunction(U"난수_가져오다", {}, [&](std::uint64_t, const std::vector<Constant>&) -> Constant {
+			thread_local std::mt19937_64 mt(std::random_device{}());
+			return IntegerConstant(static_cast<std::int64_t>(mt()));
+		});
+	}
+	Constant Interpreter::ConvertStringToList(const std::u32string& string) {
+		if (string.empty()) return NoneConstant();
+
+		StringList nodeFields;
+		nodeFields.Add(U"첫번째");
+		nodeFields.Add(U"나머지");
+		const StringMap nodeBase(nodeFields);
+
+		std::vector<std::unique_ptr<StringMap>> nodes;
+		StringMap* first = nullptr;
+		for (std::size_t i = 0; i < string.size(); ++i) {
+			std::unique_ptr<StringMap>& node = nodes.emplace_back(new StringMap(nodeBase));
+			node->BindConstant(CharacterConstant(string[i]));
+			if (i) {
+				nodes[i - 1]->BindConstant(StructureConstant(node.get()));
+			} else {
+				first = node.get();
+			}
+		}
+
+		m_ByteFile.AllocateStructures(nodes.size());
+		for (std::unique_ptr<StringMap>& node : nodes) {
+			m_ByteFile.AddStructure(node.release());
+		}
+		return StructureConstant(first);
+	}
+	std::optional<std::u32string> Interpreter::ConvertListToString(std::uint64_t offset, const Constant& list) {
+		std::u32string result;
+
+		const Constant* current = &list;
+		Type currentType;
+		while ((currentType = GetType(*current)) != Type::None) {
+			if (currentType != Type::Structure) {
+				RaiseException(offset, InvalidTypeException(u8"구조체", typeName(currentType)));
+				return std::nullopt;
+			}
+
+			const auto node = std::get<StructureConstant>(*current);
+			const std::optional<Constant> item = (*node.Value)[U"첫번째"];
+			if (item) {
+				if (const auto itemType = GetType(*item); itemType != Type::Character) {
+					RaiseException(offset, InvalidTypeException(u8"문자", typeName(currentType)));
+					return std::nullopt;
+				}
+				result.push_back(std::get<CharacterConstant>(*item).Value);
+			} else {
+				RaiseException(offset, UndefinedException(u8"필드", /*TODO*/""));
+				return std::nullopt;
+			}
+		}
+		return result;
 	}
 
 	void Interpreter::RaiseException(std::uint64_t offset, std::string&& message) {

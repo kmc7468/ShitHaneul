@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -138,6 +139,7 @@ namespace ShitHaneul {
 
 	Type GetType(const Constant& constant) noexcept;
 	bool Equal(const Constant& lhs, const Constant& rhs) noexcept;
+	std::u32string ToString(const Constant& constant);
 
 	template<typename T>
 	using MakeConstantClass = std::conditional_t<
@@ -179,6 +181,7 @@ namespace ShitHaneul {
 
 	public:
 		StringList() noexcept = default;
+		StringList(std::vector<std::u32string>&& list);
 		StringList(const StringList& stringList);
 		StringList(StringList&& stringList) noexcept;
 		~StringList() = default;
@@ -219,8 +222,8 @@ namespace ShitHaneul {
 		StringMap& operator=(StringMap&& stringMap) noexcept;
 		bool operator==(const StringMap& other) const noexcept;
 		bool operator!=(const StringMap& other) const noexcept;
-		Constant operator[](std::uint8_t index) const noexcept;
-		Constant operator[](const std::u32string_view& string) const noexcept;
+		std::pair<std::u32string_view, Constant> operator[](std::uint8_t index) const noexcept;
+		std::optional<Constant> operator[](const std::u32string_view& string) const noexcept;
 
 	public:
 		bool IsEmpty() const noexcept;

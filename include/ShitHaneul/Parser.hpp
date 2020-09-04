@@ -36,6 +36,7 @@ namespace ShitHaneul {
 		Function* GetRoot() noexcept;
 		void SetRoot(Function* function) noexcept;
 
+		void AllocateStructures(std::size_t required);
 		void AddStructure(StringMap* structure);
 		StringMap* CopyStructure(const StringMap* structure);
 	};

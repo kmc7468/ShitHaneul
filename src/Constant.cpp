@@ -1,4 +1,4 @@
-#include <ShitHaneul/Constant.hpp>
+﻿#include <ShitHaneul/Constant.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -113,6 +113,44 @@ namespace ShitHaneul {
 		case Type::Structure: return lhsType == rhsType && *std::get<StructureConstant>(lhs).Value == *std::get<StructureConstant>(rhs).Value;
 		}
 	}
+	std::u32string ToString(const Constant& constant) {
+		const auto type = GetType(constant);
+		switch (type) {
+		case Type::None: return U"(없음)";
+		case Type::Integer: {
+			const std::string temp = std::to_string(std::get<IntegerConstant>(constant).Value);
+			return { temp.begin(), temp.end() };
+		}
+		case Type::Real: {
+			const std::string temp = std::to_string(std::get<RealConstant>(constant).Value);
+			return { temp.begin(), temp.end() };
+		}
+		case Type::Boolean: return std::get<BooleanConstant>(constant).Value ? U"참" : U"거짓";
+		case Type::Character: {
+			std::u32string result(3, U'\'');
+			result[1] = std::get<CharacterConstant>(constant).Value;
+			return result;
+		}
+		case Type::Function: return U"(함수)";
+		case Type::Structure: {
+			std::u32string result(1, U'{');
+
+			const auto structure = std::get<StructureConstant>(constant);
+			const std::uint8_t count = structure.Value->GetCount();
+			for (std::uint8_t i = 0; i < count; ++i) {
+				if (i) {
+					result += U", ";
+				}
+
+				const auto [name, value] = (*structure.Value)[i];
+				result += name;
+				result += U": ";
+				result += ToString(value);
+			}
+			return result += U'}';
+		}
+		}
+	}
 }
 
 namespace ShitHaneul {
@@ -139,6 +177,11 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	StringList::StringList(std::vector<std::u32string>&& list) {
+		for (std::u32string& string : list) {
+			Add(std::move(string));
+		}
+	}
 	StringList::StringList(const StringList& stringList)
 		: m_List(stringList.m_List) {}
 	StringList::StringList(StringList&& stringList) noexcept
@@ -210,15 +253,17 @@ namespace ShitHaneul {
 	bool StringMap::operator!=(const StringMap& other) const noexcept {
 		return !(*this == other);
 	}
-	Constant StringMap::operator[](std::uint8_t index) const noexcept {
-		return m_Map[static_cast<std::size_t>(index)].second;
+	std::pair<std::u32string_view, Constant> StringMap::operator[](std::uint8_t index) const noexcept {
+		const auto& item = m_Map[static_cast<std::size_t>(index)];
+		return { item.first.second, item.second };
 	}
-	Constant StringMap::operator[](const std::u32string_view& string) const noexcept {
+	std::optional<Constant> StringMap::operator[](const std::u32string_view& string) const noexcept {
 		const std::size_t hash = std::hash<std::u32string_view>{}(string);
 		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [string, hash](const auto& element) {
 			return element.first.first == hash && element.first.second == string;
 		});
-		return iter->second;
+		if (iter != m_Map.end()) return iter->second;
+		else return std::nullopt;
 	}
 
 	bool StringMap::IsEmpty() const noexcept {

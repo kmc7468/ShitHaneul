@@ -6,6 +6,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -79,6 +81,12 @@ namespace ShitHaneul {
 		const std::vector<StackFrame>& GetStackTrace() const noexcept;
 
 	private:
+		void RegisterBuiltinFunction(const std::u32string& name, StringList&& josaList,
+			std::function<Constant(std::uint64_t, const std::vector<Constant>&)>&& builtinFunction);
+		void RegisterBuiltinFunctions();
+		Constant ConvertStringToList(const std::u32string& string);
+		std::optional<std::u32string> ConvertListToString(std::uint64_t offset, const Constant& list);
+
 		void RaiseException(std::uint64_t offset, std::string&& message);
 		static std::string InvalidTypeException(const std::string_view& expected, const std::string_view& given);
 		static std::string UndefinedException(const std::string_view& type, const std::string_view& name);

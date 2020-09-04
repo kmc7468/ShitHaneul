@@ -4,6 +4,7 @@
 #include <ShitHaneul/Instruction.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -49,10 +50,12 @@ namespace ShitHaneul {
 
 		StringList JosaList;
 		ShitHaneul::LineMap LineMap;
+		std::function<Constant(std::uint64_t, const std::vector<Constant>&)> BuiltinFunction;
 		ShitHaneul::InstructionList InstructionList;
 
 	public:
 		FunctionInfo() noexcept = default;
+		FunctionInfo(StringList&& josaList, std::function<Constant(std::uint64_t, const std::vector<Constant>&)>&& builtinFunction);
 		FunctionInfo(FunctionInfo&& functionInfo) noexcept;
 		~FunctionInfo() = default;
 
