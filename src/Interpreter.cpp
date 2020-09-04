@@ -636,9 +636,12 @@ namespace ShitHaneul {
 	Constant Interpreter::ConvertStringToList(const std::u32string& string) {
 		if (string.empty()) return NoneConstant();
 
-		StringList nodeFields;
-		nodeFields.Add(U"첫번째");
-		nodeFields.Add(U"나머지");
+		thread_local const StringList nodeFields = []() {
+			StringList nodeFields;
+			nodeFields.Add(U"첫번째");
+			nodeFields.Add(U"나머지");
+			return nodeFields;
+		}();
 		const StringMap nodeBase(nodeFields);
 
 		std::vector<std::unique_ptr<StringMap>> nodes;
@@ -652,6 +655,7 @@ namespace ShitHaneul {
 				first = node.get();
 			}
 		}
+		nodes.back()->BindConstant(NoneConstant{});
 
 		m_ByteFile.AllocateStructures(nodes.size());
 		for (std::unique_ptr<StringMap>& node : nodes) {
