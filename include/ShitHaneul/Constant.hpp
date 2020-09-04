@@ -212,6 +212,7 @@ namespace ShitHaneul {
 		std::uint8_t m_BoundCount = 0;
 
 	public:
+		StringMap() noexcept = default;
 		explicit StringMap(const StringList& stringList);
 		StringMap(const StringMap& stringMap) noexcept;
 		StringMap(StringMap&& stringMap) noexcept;

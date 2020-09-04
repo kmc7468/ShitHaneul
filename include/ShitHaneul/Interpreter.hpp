@@ -100,6 +100,12 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	char32_t EncodeUTF8ToUTF32(char first, char second, char third, char fourth) noexcept;
 	std::u32string EncodeUTF8ToUTF32(const std::string_view& utf8);
+	std::string EncodeUTF32ToUTF8(char32_t character);
 	std::string EncodeUTF32ToUTF8(const std::u32string_view& utf32);
+
+	char32_t ReadCharacterFromStdin();
+	void WriteCharacterToStdout(char32_t character);
+	void WriteStringToStdout(const std::string_view& string);
 }

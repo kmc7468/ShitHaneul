@@ -1,5 +1,8 @@
 ﻿#include <ShitHaneul/Interpreter.hpp>
 
+#include <ShitHaneul/Memory.hpp>
+
+#include <iostream>
 #include <memory>
 #include <random>
 #include <utility>
@@ -258,7 +261,13 @@ namespace ShitHaneul {
 				for (std::uint8_t i = 0; i < count; ++i) {
 					const auto [type, index] = freeVarListOperand[i];
 					if (type == VariableType::Local) {
-						target.Value->FreeVariableList.push_back(frame.LoadDirect(index));
+						Constant& variable = frame.LoadDirect(index);
+						if (!variable.index()) {
+							std::unique_ptr<Function> dummyFunc(new Function);
+							m_ByteFile.AddFunction(dummyFunc.get());
+							variable = FunctionConstant(dummyFunc.release(), true);
+						}
+						target.Value->FreeVariableList.push_back(variable);
 					} else {
 						target.Value->FreeVariableList.push_back(frame.GetCurrentFunction()->FreeVariableList[static_cast<std::size_t>(index)]);
 					}
@@ -527,8 +536,25 @@ namespace ShitHaneul {
 	}
 	void Interpreter::RegisterBuiltinFunctions() {
 		using namespace std::string_literals;
+		RegisterBuiltinFunction(U"문자_출력하다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
+			if (const auto type = GetType(arguments[0].second); type != Type::Character) {
+				RaiseException(offset, InvalidTypeException(u8"문자", typeName(type)));
+				return std::monostate{};
+			} else {
+				WriteCharacterToStdout(std::get<CharacterConstant>(arguments[0].second).Value);
+				return NoneConstant{};
+			}
+		});
 		RegisterBuiltinFunction(U"문자열화하다", { { U"을"s } }, [&](std::uint64_t, const StringMap& arguments) -> Constant {
 			return ConvertStringToList(ToString(arguments[0].second));
+		});
+		RegisterBuiltinFunction(U"입력받다", {}, [&](std::uint64_t, const StringMap&) -> Constant {
+			std::u32string result;
+			do {
+				result.push_back(ReadCharacterFromStdin());
+			} while (result.back() != '\n');
+			result.erase(result.end() - 1);
+			return ConvertStringToList(result);
 		});
 		RegisterBuiltinFunction(U"정수화하다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
 			const auto type = GetType(arguments[0].second);
@@ -544,7 +570,7 @@ namespace ShitHaneul {
 			}
 			default:
 				RaiseException(offset, InvalidTypeException(u8"정수화할 수 있는", typeName(type)));
-				return std::monostate();
+				return std::monostate{};
 			}
 		});
 		RegisterBuiltinFunction(U"실수화하다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
@@ -561,7 +587,7 @@ namespace ShitHaneul {
 			}
 			default:
 				RaiseException(offset, InvalidTypeException(u8"실수화할 수 있는", typeName(type)));
-				return std::monostate();
+				return std::monostate{};
 			}
 		});
 		RegisterBuiltinFunction(U"난수_가져오다", {}, [&](std::uint64_t, const StringMap&) -> Constant {
@@ -686,32 +712,52 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	char32_t EncodeUTF8ToUTF32(char first, char second, char third, char fourth) noexcept {
+		if (second == 0) return static_cast<char32_t>(first);
+		else if (third == 0) return ((static_cast<char32_t>(first) & 0x1F) << 6) + (static_cast<char32_t>(second) & 0x3F);
+		else if (fourth == 0) return ((static_cast<char32_t>(first) & 0x0F) << 12) + ((static_cast<char32_t>(second) & 0x3F) << 6) +
+			(static_cast<char32_t>(third) & 0x3F);
+		else return ((static_cast<char32_t>(first) & 0x07) << 18) + ((static_cast<char32_t>(second) & 0x3F) << 12) +
+			((static_cast<char32_t>(second) & 0x3F) << 6) + (static_cast<char32_t>(fourth) & 0x3F);
+	}
 	std::u32string EncodeUTF8ToUTF32(const std::string_view& utf8) {
 		std::u32string result;
 
 		for (std::size_t i = 0; i < utf8.size();) {
 			const auto first = static_cast<unsigned char>(utf8[i]);
 			if (first < 0x80) {
-				result.push_back(static_cast<char32_t>(first));
+				result.push_back(EncodeUTF8ToUTF32(utf8[i], 0, 0, 0));
 				i += 1;
 			} else if (first < 0xE0) {
-				const auto second = static_cast<unsigned char>(utf8[i + 1]);
-				result.push_back(((static_cast<char32_t>(first) & 0x1F) << 6) + (static_cast<char32_t>(second) & 0x3F));
+				result.push_back(EncodeUTF8ToUTF32(utf8[i], utf8[i + 1], 0, 0));
 				i += 2;
 			} else if (first < 0xF0) {
-				const auto second = static_cast<unsigned char>(utf8[i + 1]);
-				const auto third = static_cast<unsigned char>(utf8[i + 2]);
-				result.push_back(((static_cast<char32_t>(first) & 0x0F) << 12) + ((static_cast<char32_t>(second) & 0x3F) << 6) +
-					(static_cast<char32_t>(third) & 0x3F));
+				result.push_back(EncodeUTF8ToUTF32(utf8[i], utf8[i + 1], utf8[i + 2], 0));
 				i += 3;
 			} else {
-				const auto second = static_cast<unsigned char>(utf8[i + 1]);
-				const auto third = static_cast<unsigned char>(utf8[i + 2]);
-				const auto fourth = static_cast<unsigned char>(utf8[i + 3]);
-				result.push_back(((static_cast<char32_t>(first) & 0x07) << 18) + ((static_cast<char32_t>(second) & 0x3F) << 12) +
-					((static_cast<char32_t>(second) & 0x3F) << 6) + (static_cast<char32_t>(fourth) & 0x3F));
+				result.push_back(EncodeUTF8ToUTF32(utf8[i], utf8[i + 1], utf8[i + 2], utf8[i + 3]));
 				i += 4;
 			}
+		}
+		return result;
+	}
+	std::string EncodeUTF32ToUTF8(char32_t character) {
+		std::string result;
+
+		if (character < 0x80) {
+			result.push_back(static_cast<char>(character));
+		} else if (character < 0x0800) {
+			result.push_back(static_cast<char>(0xC0 | (character >> 6)));
+			result.push_back(static_cast<char>(0x80 | (character & 0x3F)));
+		} else if (character < 0x10000) {
+			result.push_back(static_cast<char>(0xE0 | (character >> 12)));
+			result.push_back(static_cast<char>(0x80 | ((character >> 6) & 0x3F)));
+			result.push_back(static_cast<char>(0x80 | (character & 0x3F)));
+		} else {
+			result.push_back(static_cast<char>(0xF0 | (character >> 18)));
+			result.push_back(static_cast<char>(0x80 | ((character >> 12) & 0x3F)));
+			result.push_back(static_cast<char>(0x80 | ((character >> 6) & 0x3F)));
+			result.push_back(static_cast<char>(0x80 | (character & 0x3F)));
 		}
 		return result;
 	}
@@ -719,22 +765,85 @@ namespace ShitHaneul {
 		std::string result;
 
 		for (char32_t c : utf32) {
-			if (c < 0x80) {
-				result.push_back(static_cast<char>(c));
-			} else if (c < 0x0800) {
-				result.push_back(static_cast<char>(0xC0 | (c >> 6)));
-				result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
-			} else if (c < 0x10000) {
-				result.push_back(static_cast<char>(0xE0 | (c >> 12)));
-				result.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3F)));
-				result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
-			} else {
-				result.push_back(static_cast<char>(0xF0 | (c >> 18)));
-				result.push_back(static_cast<char>(0x80 | ((c >> 12) & 0x3F)));
-				result.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3F)));
-				result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
-			}
+			const std::string temp = EncodeUTF32ToUTF8(c);
+			result.insert(result.end(), temp.begin(), temp.end());
 		}
 		return result;
+	}
+
+	char32_t ReadCharacterFromStdin() {
+#ifdef SHN_WINDOWS
+		wchar_t first;
+		std::wcin >> first;
+		if (0xD800 <= first && first <= 0xDBFF) {
+			wchar_t second;
+			std::wcin >> second;
+			return (static_cast<char32_t>(first) - 0xD800) * 0x400 + (static_cast<char32_t>(second) - 0xDC00);
+		} else return static_cast<char32_t>(first);
+#else
+		char first;
+		std::cin >> first;
+		const auto first = static_cast<unsigned char>(utf8[i]);
+		if (static_cast<unsigned char>(first) < 0x80) return EncodeUTF8ToUTF32(first, 0, 0, 0);
+		else if (static_cast<unsigned char>(first) < 0xE0) {
+			char second;
+			std::cin >> second;
+			return EncodeUTF8ToUTF32(first, second, 0, 0);
+		} else if (static_cast<unsigned char>(first) < 0xF0) {
+			char second, third;
+			std::cin >> second >> third;
+			return EncodeUTF8ToUTF32(first, second, third, 0);
+		} else {
+			char second, third, fourth;
+			std::cin >> second >> third >> fourth;
+			result.push_back(EncodeUTF8ToUTF32(first, second, third, fourth));
+		}
+#endif
+	}
+	void WriteCharacterToStdout(char32_t character) {
+#ifdef SHN_WINDOWS
+		if (character < 0x10000) {
+			std::wcout << static_cast<wchar_t>(character);
+		} else {
+			character -= 0x10000;
+			const wchar_t highSurrogate = static_cast<wchar_t>((character / 0x400) + 0xD800);
+			const wchar_t lowSurrogate = static_cast<wchar_t>((character % 0x400) + 0xDC00);
+			std::wcout << highSurrogate << lowSurrogate;
+		}
+#else
+		std::cout << EncodeUTF32ToUTF8(character);
+#endif
+	}
+	void WriteStringToStdout(const std::string_view& string) {
+#ifdef SHN_WINDOWS
+		for (std::size_t i = 0; i < string.size();) {
+			const auto first = static_cast<unsigned char>(string[i]);
+			char32_t c;
+			if (first < 0x80) {
+				c = EncodeUTF8ToUTF32(string[i], 0, 0, 0);
+				i += 1;
+			} else if (first < 0xE0) {
+				c = EncodeUTF8ToUTF32(string[i], string[i + 1], 0, 0);
+				i += 2;
+			} else if (first < 0xF0) {
+				c = EncodeUTF8ToUTF32(string[i], string[i + 1], string[i + 2], 0);
+				i += 3;
+			} else {
+				c = EncodeUTF8ToUTF32(string[i], string[i + 1], string[i + 2], string[i + 3]);
+				i += 4;
+			}
+
+			if (c < 0x10000) {
+				std::wcout << static_cast<wchar_t>(c);
+			} else {
+				c -= 0x10000;
+				const wchar_t highSurrogate = static_cast<wchar_t>((c / 0x400) + 0xD800);
+				const wchar_t lowSurrogate = static_cast<wchar_t>((c % 0x400) + 0xDC00);
+				std::wcout << highSurrogate << lowSurrogate;
+			}
+		}
+#else
+		std::cout << string;
+#endif
 	}
 }

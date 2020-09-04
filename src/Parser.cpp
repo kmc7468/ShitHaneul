@@ -1,5 +1,7 @@
 #include <ShitHaneul/Parser.hpp>
 
+#include <ShitHaneul/Interpreter.hpp>
+
 #include <algorithm>
 #include <fstream>
 #include <functional>
@@ -99,21 +101,19 @@ namespace ShitHaneul {
 
 	char32_t Parser::ReadCharacter() {
 		const auto first = ReadScalar<std::uint8_t>();
-		if (first < 0x80) return first;
+		if (first < 0x80) return EncodeUTF8ToUTF32(first, 0, 0, 0);
 		else if (first < 0xE0) {
 			const auto second = ReadScalar<std::uint8_t>();
-			return ((static_cast<char32_t>(first) & 0x1F) << 6) + (static_cast<char32_t>(second) & 0x3F);
+			return EncodeUTF8ToUTF32(static_cast<char>(first), static_cast<char>(second), 0, 0);
 		} else if (first < 0xF0) {
 			const auto second = ReadScalar<std::uint8_t>();
 			const auto third = ReadScalar<std::uint8_t>();
-			return ((static_cast<char32_t>(first) & 0x0F) << 12) + ((static_cast<char32_t>(second) & 0x3F) << 6) +
-				(static_cast<char32_t>(third) & 0x3F);
+			return EncodeUTF8ToUTF32(static_cast<char>(first), static_cast<char>(second), static_cast<char>(third), 0);
 		} else {
 			const auto second = ReadScalar<std::uint8_t>();
 			const auto third = ReadScalar<std::uint8_t>();
 			const auto fourth = ReadScalar<std::uint8_t>();
-			return ((static_cast<char32_t>(first) & 0x07) << 18) + ((static_cast<char32_t>(second) & 0x3F) << 12) +
-				((static_cast<char32_t>(second) & 0x3F) << 6) + (static_cast<char32_t>(fourth) & 0x3F);
+			return EncodeUTF8ToUTF32(static_cast<char>(first), static_cast<char>(second), static_cast<char>(third), static_cast<char>(fourth));
 		}
 	}
 
