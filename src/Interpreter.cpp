@@ -153,16 +153,16 @@ namespace ShitHaneul {
 						const BoundResult result = newFunc->JosaMap.BindConstant(frame.GetTop());
 						if (result != BoundResult::Success) {
 							RaiseException(offset,
-								result == BoundResult::Undefiend ? NoJosaException(/*TODO*/"") :
-								AlreadyBoundException(u8"함수", /*TODO*/""));
+								result == BoundResult::Undefiend ? NoJosaException(EncodeUTF32ToUTF8(newFunc->Info->Name)) :
+								AlreadyBoundException(u8"함수", EncodeUTF32ToUTF8(newFunc->Info->Name)));
 							return false;
 						}
 					} else {
 						const BoundResult result = newFunc->JosaMap.BindConstant(strListOperand[i].second, frame.GetTop());
 						if (result != BoundResult::Success) {
 							RaiseException(offset,
-								result == BoundResult::Undefiend ? UndefinedException(u8"조사", /*TODO*/"") :
-								AlreadyBoundException(u8"조사", /*TODO*/""));
+								result == BoundResult::Undefiend ? UndefinedException(u8"조사", EncodeUTF32ToUTF8(strListOperand[i].second)) :
+								AlreadyBoundException(u8"조사", EncodeUTF32ToUTF8(strListOperand[i].second)));
 							return false;
 						}
 					}
@@ -202,7 +202,7 @@ namespace ShitHaneul {
 				std::unique_ptr<StringMap> structure(new StringMap(fields));
 				for (std::uint8_t i = 0; i < givenFieldCount; ++i) {
 					if (!fields.Contains(strListOperand[i].second)) {
-						RaiseException(offset, UndefinedException(u8"필드", /*TODO*/""));
+						RaiseException(offset, UndefinedException(u8"필드", EncodeUTF32ToUTF8(strListOperand[i].second)));
 						return false;
 					}
 					structure->BindConstant(frame.GetTop());
@@ -229,7 +229,7 @@ namespace ShitHaneul {
 					frame.Push(*field);
 					break;
 				} else {
-					RaiseException(offset, UndefinedException(u8"필드", /*TODO*/""));
+					RaiseException(offset, UndefinedException(u8"필드", EncodeUTF32ToUTF8(strOperand)));
 					return false;
 				}
 			}
@@ -536,7 +536,12 @@ namespace ShitHaneul {
 			case Type::Integer: return arguments[0].second;
 			case Type::Real: return IntegerConstant(static_cast<std::int64_t>(std::get<RealConstant>(arguments[0].second).Value));
 			case Type::Character: return IntegerConstant(static_cast<std::int64_t>(std::get<CharacterConstant>(arguments[0].second).Value));
-			case Type::Structure: return IntegerConstant(/*TODO*/0);
+			case Type::Structure: {
+				const std::optional<std::u32string> str = ConvertListToString(offset, arguments[0].second);
+				if (!str) return std::monostate();
+				const std::string strUTF8 = EncodeUTF32ToUTF8(*str);
+				return IntegerConstant(static_cast<std::int64_t>(std::stoll(strUTF8)));
+			}
 			default:
 				RaiseException(offset, InvalidTypeException(u8"정수화할 수 있는", typeName(type)));
 				return std::monostate();
@@ -548,7 +553,12 @@ namespace ShitHaneul {
 			case Type::Integer: return RealConstant(static_cast<double>(std::get<IntegerConstant>(arguments[0].second).Value));
 			case Type::Real: return arguments[0].second;
 			case Type::Character: return RealConstant(static_cast<double>(std::get<CharacterConstant>(arguments[0].second).Value));
-			case Type::Structure: return RealConstant(/*TODO*/0);
+			case Type::Structure: {
+				const std::optional<std::u32string> str = ConvertListToString(offset, arguments[0].second);
+				if (!str) return std::monostate();
+				const std::string strUTF8 = EncodeUTF32ToUTF8(*str);
+				return RealConstant(std::stod(strUTF8));
+			}
 			default:
 				RaiseException(offset, InvalidTypeException(u8"실수화할 수 있는", typeName(type)));
 				return std::monostate();
@@ -605,7 +615,7 @@ namespace ShitHaneul {
 				}
 				result.push_back(std::get<CharacterConstant>(*item).Value);
 			} else {
-				RaiseException(offset, UndefinedException(u8"필드", /*TODO*/""));
+				RaiseException(offset, UndefinedException(u8"필드", u8"첫번째"));
 				return std::nullopt;
 			}
 		}
@@ -671,6 +681,60 @@ namespace ShitHaneul {
 		result += u8" 자료형의 값끼리의 ";
 		result += operation;
 		result += u8" 연산은 지원되지 않습니다.";
+		return result;
+	}
+}
+
+namespace ShitHaneul {
+	std::u32string EncodeUTF8ToUTF32(const std::string_view& utf8) {
+		std::u32string result;
+
+		for (std::size_t i = 0; i < utf8.size();) {
+			const auto first = static_cast<unsigned char>(utf8[i]);
+			if (first < 0x80) {
+				result.push_back(static_cast<char32_t>(first));
+				i += 1;
+			} else if (first < 0xE0) {
+				const auto second = static_cast<unsigned char>(utf8[i + 1]);
+				result.push_back(((static_cast<char32_t>(first) & 0x1F) << 6) + (static_cast<char32_t>(second) & 0x3F));
+				i += 2;
+			} else if (first < 0xF0) {
+				const auto second = static_cast<unsigned char>(utf8[i + 1]);
+				const auto third = static_cast<unsigned char>(utf8[i + 2]);
+				result.push_back(((static_cast<char32_t>(first) & 0x0F) << 12) + ((static_cast<char32_t>(second) & 0x3F) << 6) +
+					(static_cast<char32_t>(third) & 0x3F));
+				i += 3;
+			} else {
+				const auto second = static_cast<unsigned char>(utf8[i + 1]);
+				const auto third = static_cast<unsigned char>(utf8[i + 2]);
+				const auto fourth = static_cast<unsigned char>(utf8[i + 3]);
+				result.push_back(((static_cast<char32_t>(first) & 0x07) << 18) + ((static_cast<char32_t>(second) & 0x3F) << 12) +
+					((static_cast<char32_t>(second) & 0x3F) << 6) + (static_cast<char32_t>(fourth) & 0x3F));
+				i += 4;
+			}
+		}
+		return result;
+	}
+	std::string EncodeUTF32ToUTF8(const std::u32string_view& utf32) {
+		std::string result;
+
+		for (char32_t c : utf32) {
+			if (c < 0x80) {
+				result.push_back(static_cast<char>(c));
+			} else if (c < 0x0800) {
+				result.push_back(static_cast<char>(0xC0 | (c >> 6)));
+				result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+			} else if (c < 0x10000) {
+				result.push_back(static_cast<char>(0xE0 | (c >> 12)));
+				result.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3F)));
+				result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+			} else {
+				result.push_back(static_cast<char>(0xF0 | (c >> 18)));
+				result.push_back(static_cast<char>(0x80 | ((c >> 12) & 0x3F)));
+				result.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3F)));
+				result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+			}
+		}
 		return result;
 	}
 }

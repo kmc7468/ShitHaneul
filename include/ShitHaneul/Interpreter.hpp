@@ -98,3 +98,8 @@ namespace ShitHaneul {
 		static std::string BinaryTypeException(const std::string_view& lhs, const std::string_view& rhs, const std::string_view& operation);
 	};
 }
+
+namespace ShitHaneul {
+	std::u32string EncodeUTF8ToUTF32(const std::string_view& utf8);
+	std::string EncodeUTF32ToUTF8(const std::u32string_view& utf32);
+}
