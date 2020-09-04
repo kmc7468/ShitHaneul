@@ -144,13 +144,21 @@ namespace ShitHaneul {
 				break;
 
 			case OpCode::Call: {
-				if (const auto type = GetType(frame.GetTop()); type != Type::Function) {
+				if (frame.GetTop().index() == 0) {
+					RaiseException(offset, UndefinedFunctionException());
+					return false;
+				} else if (const auto type = GetType(frame.GetTop()); type != Type::Function) {
 					RaiseException(offset, InvalidTypeException(u8"함수", typeName(type)));
 					return false;
 				}
 
 				const auto target = std::get<FunctionConstant>(frame.GetTop());
 				Function* const newFunc = m_ByteFile.CopyFunction(target.Value);
+				if (!newFunc->Info) {
+					RaiseException(offset, UndefinedFunctionException());
+					return false;
+				}
+
 				for (std::uint8_t i = 0; i < strListOperand.GetCount(); ++i) {
 					if (strListOperand[i].second == U"_") {
 						const BoundResult result = newFunc->JosaMap.BindConstant(frame.GetTop());
@@ -668,6 +676,9 @@ namespace ShitHaneul {
 		result += name;
 		result += u8"'을/를 찾을 수 없습니다.";
 		return result;
+	}
+	std::string Interpreter::UndefinedFunctionException() {
+		return u8"선언은 되었으나 정의되지 않은 함수를 호출할 수 없습니다.";
 	}
 	std::string Interpreter::NoJosaException(const std::string_view& name) {
 		std::string result(u8"함수 '");
