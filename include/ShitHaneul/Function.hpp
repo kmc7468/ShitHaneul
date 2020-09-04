@@ -50,12 +50,12 @@ namespace ShitHaneul {
 
 		StringList JosaList;
 		ShitHaneul::LineMap LineMap;
-		std::function<Constant(std::uint64_t, const std::vector<Constant>&)> BuiltinFunction;
+		std::function<Constant(std::uint64_t, const StringMap&)> BuiltinFunction;
 		ShitHaneul::InstructionList InstructionList;
 
 	public:
 		FunctionInfo() noexcept = default;
-		FunctionInfo(StringList&& josaList, std::function<Constant(std::uint64_t, const std::vector<Constant>&)>&& builtinFunction);
+		FunctionInfo(StringList&& josaList, std::function<Constant(std::uint64_t, const StringMap&)>&& builtinFunction);
 		FunctionInfo(FunctionInfo&& functionInfo) noexcept;
 		~FunctionInfo() = default;
 

@@ -42,7 +42,7 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	FunctionInfo::FunctionInfo(StringList&& josaList, std::function<Constant(std::uint64_t, const std::vector<Constant>&)>&& builtinFunction)
+	FunctionInfo::FunctionInfo(StringList&& josaList, std::function<Constant(std::uint64_t, const StringMap&)>&& builtinFunction)
 		: JosaList(std::move(josaList)), BuiltinFunction(std::move(builtinFunction)) {}
 	FunctionInfo::FunctionInfo(FunctionInfo&& functionInfo) noexcept
 		: Name(std::move(functionInfo.Name)), Line(std::move(functionInfo.Line)),

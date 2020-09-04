@@ -172,9 +172,16 @@ namespace ShitHaneul {
 				if (newFunc->JosaMap.GetUnboundCount()) {
 					frame.Push(FunctionConstant(newFunc));
 				} else {
-					frame.SetCurrentOffset(offset);
-					offset = static_cast<std::uint64_t>(-1);
-					m_StackTrace.emplace_back(newFunc);
+					if (newFunc->Info->BuiltinFunction) {
+						const Constant result = newFunc->Info->BuiltinFunction(offset, newFunc->JosaMap);
+						if (result.index()) {
+							frame.Push(result);
+						} else return false;
+					} else {
+						frame.SetCurrentOffset(offset);
+						offset = static_cast<std::uint64_t>(-1);
+						m_StackTrace.emplace_back(newFunc);
+					}
 				}
 				break;
 			}
@@ -499,6 +506,7 @@ namespace ShitHaneul {
 
 		if (m_StackTrace.size() > 1) {
 			offset = m_StackTrace[m_StackTrace.size() - 2].GetCurrentOffset() + 1;
+			m_StackTrace[m_StackTrace.size() - 2].Push(frame.GetTop());
 			m_StackTrace.erase(m_StackTrace.end() - 1);
 			goto start;
 		}
@@ -512,41 +520,41 @@ namespace ShitHaneul {
 	}
 
 	void Interpreter::RegisterBuiltinFunction(const std::u32string& name, StringList&& josaList,
-		std::function<Constant(std::uint64_t, const std::vector<Constant>&)>&& builtinFunction) {
+		std::function<Constant(std::uint64_t, const StringMap&)>&& builtinFunction) {
 		std::unique_ptr<FunctionInfo> function(new FunctionInfo(std::move(josaList), std::move(builtinFunction)));
 		m_GlobalVariables[name] = FunctionConstant(m_ByteFile.RegisterFunction(function.get()));
 		function.release();
 	}
 	void Interpreter::RegisterBuiltinFunctions() {
 		using namespace std::string_literals;
-		RegisterBuiltinFunction(U"문자열화하다", { { U"을"s } }, [&](std::uint64_t, const std::vector<Constant>& arguments) -> Constant {
-			return ConvertStringToList(ToString(arguments[0]));
+		RegisterBuiltinFunction(U"문자열화하다", { { U"을"s } }, [&](std::uint64_t, const StringMap& arguments) -> Constant {
+			return ConvertStringToList(ToString(arguments[0].second));
 		});
-		RegisterBuiltinFunction(U"정수화하다", { { U"을"s } }, [&](std::uint64_t offset, const std::vector<Constant>& arguments) -> Constant {
-			const auto type = GetType(arguments[0]);
+		RegisterBuiltinFunction(U"정수화하다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
+			const auto type = GetType(arguments[0].second);
 			switch (type) {
-			case Type::Integer: return arguments[0];
-			case Type::Real: return IntegerConstant(static_cast<std::int64_t>(std::get<RealConstant>(arguments[0]).Value));
-			case Type::Character: return IntegerConstant(static_cast<std::int64_t>(std::get<CharacterConstant>(arguments[0]).Value));
+			case Type::Integer: return arguments[0].second;
+			case Type::Real: return IntegerConstant(static_cast<std::int64_t>(std::get<RealConstant>(arguments[0].second).Value));
+			case Type::Character: return IntegerConstant(static_cast<std::int64_t>(std::get<CharacterConstant>(arguments[0].second).Value));
 			case Type::Structure: return IntegerConstant(/*TODO*/0);
 			default:
 				RaiseException(offset, InvalidTypeException(u8"정수화할 수 있는", typeName(type)));
 				return std::monostate();
 			}
 		});
-		RegisterBuiltinFunction(U"실수화하다", { { U"을"s } }, [&](std::uint64_t offset, const std::vector<Constant>& arguments) -> Constant {
-			const auto type = GetType(arguments[0]);
+		RegisterBuiltinFunction(U"실수화하다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
+			const auto type = GetType(arguments[0].second);
 			switch (type) {
-			case Type::Integer: return RealConstant(static_cast<double>(std::get<IntegerConstant>(arguments[0]).Value));
-			case Type::Real: return arguments[0];
-			case Type::Character: return RealConstant(static_cast<double>(std::get<CharacterConstant>(arguments[0]).Value));
+			case Type::Integer: return RealConstant(static_cast<double>(std::get<IntegerConstant>(arguments[0].second).Value));
+			case Type::Real: return arguments[0].second;
+			case Type::Character: return RealConstant(static_cast<double>(std::get<CharacterConstant>(arguments[0].second).Value));
 			case Type::Structure: return RealConstant(/*TODO*/0);
 			default:
 				RaiseException(offset, InvalidTypeException(u8"실수화할 수 있는", typeName(type)));
 				return std::monostate();
 			}
 		});
-		RegisterBuiltinFunction(U"난수_가져오다", {}, [&](std::uint64_t, const std::vector<Constant>&) -> Constant {
+		RegisterBuiltinFunction(U"난수_가져오다", {}, [&](std::uint64_t, const StringMap&) -> Constant {
 			thread_local std::mt19937_64 mt(std::random_device{}());
 			return IntegerConstant(static_cast<std::int64_t>(mt()));
 		});

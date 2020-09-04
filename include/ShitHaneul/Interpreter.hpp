@@ -82,7 +82,7 @@ namespace ShitHaneul {
 
 	private:
 		void RegisterBuiltinFunction(const std::u32string& name, StringList&& josaList,
-			std::function<Constant(std::uint64_t, const std::vector<Constant>&)>&& builtinFunction);
+			std::function<Constant(std::uint64_t, const StringMap&)>&& builtinFunction);
 		void RegisterBuiltinFunctions();
 		Constant ConvertStringToList(const std::u32string& string);
 		std::optional<std::u32string> ConvertListToString(std::uint64_t offset, const Constant& list);
