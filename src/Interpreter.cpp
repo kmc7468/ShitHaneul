@@ -1,4 +1,4 @@
-﻿#include <ShitHaneul/Interpreter.hpp>
+#include <ShitHaneul/Interpreter.hpp>
 
 #include <ShitHaneul/Memory.hpp>
 
@@ -289,14 +289,18 @@ namespace ShitHaneul {
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
+						frame.Pop(); frame.Pop();
 						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value + std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value + std::get<RealConstant>(top).Value));
 					} else goto addError;
 				} else if (underTopType == Type::Real) {
 					if (topType == Type::Integer) {
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value + std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value + std::get<RealConstant>(top).Value));
 					} else goto addError;
 				} else {
@@ -313,14 +317,18 @@ namespace ShitHaneul {
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
+						frame.Pop(); frame.Pop();
 						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value - std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value - std::get<RealConstant>(top).Value));
 					} else goto subError;
 				} else if (underTopType == Type::Real) {
 					if (topType == Type::Integer) {
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value - std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value - std::get<RealConstant>(top).Value));
 					} else goto subError;
 				} else {
@@ -337,14 +345,18 @@ namespace ShitHaneul {
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
+						frame.Pop(); frame.Pop();
 						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value * std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value * std::get<RealConstant>(top).Value));
 					} else goto mulError;
 				} else if (underTopType == Type::Real) {
+					frame.Pop(); frame.Pop();
 					if (topType == Type::Integer) {
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value * std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value * std::get<RealConstant>(top).Value));
 					} else goto mulError;
 				} else {
@@ -362,14 +374,17 @@ namespace ShitHaneul {
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
 						if (std::get<IntegerConstant>(top).Value == 0) goto divZeroError;
+						frame.Pop(); frame.Pop();
 						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value / std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
 						if (std::get<RealConstant>(top).Value == 0) goto divZeroError;
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value / std::get<RealConstant>(top).Value));
 					} else goto divError;
 				} else if (underTopType == Type::Real) {
 					if (topType == Type::Integer) {
 						if (std::get<IntegerConstant>(top).Value == 0) goto divZeroError;
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value / std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
 						if (std::get<RealConstant>(top).Value == 0) {
@@ -377,6 +392,7 @@ namespace ShitHaneul {
 							RaiseException(offset, DivideByZeroException());
 							return false;
 						}
+						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value / std::get<RealConstant>(top).Value));
 					} else goto divError;
 				} else {
@@ -399,6 +415,7 @@ namespace ShitHaneul {
 					RaiseException(offset, DivideByZeroException());
 					return false;
 				}
+				frame.Pop(); frame.Pop();
 				frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value % std::get<IntegerConstant>(top).Value));
 				break;
 			}
@@ -411,6 +428,7 @@ namespace ShitHaneul {
 					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"비교"));
 					return false;
 				} else {
+					frame.Pop(); frame.Pop();
 					frame.Push(BooleanConstant(Equal(underTop, top)));
 				}
 				break;
@@ -422,14 +440,18 @@ namespace ShitHaneul {
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
+						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value < std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
+						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value < std::get<RealConstant>(top).Value));
 					} else goto lessThanError;
 				} else if (underTopType == Type::Real) {
 					if (topType == Type::Integer) {
+						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value < std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
+						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value < std::get<RealConstant>(top).Value));
 					} else goto lessThanError;
 				} else {
@@ -446,14 +468,18 @@ namespace ShitHaneul {
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
+						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value > std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
+						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value > std::get<RealConstant>(top).Value));
 					} else goto greaterThanError;
 				} else if (underTopType == Type::Real) {
 					if (topType == Type::Integer) {
+						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value > std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
+						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value > std::get<RealConstant>(top).Value));
 					} else goto greaterThanError;
 				} else {
@@ -503,6 +529,7 @@ namespace ShitHaneul {
 					return false;
 				}
 
+				frame.Pop(); frame.Pop();
 				frame.Push(BooleanConstant(std::get<BooleanConstant>(underTop).Value && std::get<BooleanConstant>(top).Value));
 				break;
 			}
@@ -515,6 +542,7 @@ namespace ShitHaneul {
 					return false;
 				}
 
+				frame.Pop(); frame.Pop();
 				frame.Push(BooleanConstant(std::get<BooleanConstant>(underTop).Value || std::get<BooleanConstant>(top).Value));
 				break;
 			}
