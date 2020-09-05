@@ -23,7 +23,7 @@ namespace ShitHaneul {
 		std::uint64_t m_CurrentOffset = 0;
 
 	public:
-		StackFrame(Function* currentFunction);
+		StackFrame(Function* currentFunction, StackFrame* prevStackFrame);
 		StackFrame(StackFrame&& stackFrame) noexcept;
 		~StackFrame() = default;
 
@@ -31,6 +31,8 @@ namespace ShitHaneul {
 		StackFrame& operator=(StackFrame&& stackFrame) noexcept;
 
 	public:
+		void Recycle(Function* currentFunction, StackFrame* prevStackFrame, bool resetLocal = true) noexcept;
+
 		void Push(const Constant& constant) noexcept;
 		void Pop() noexcept;
 		Constant& GetTop() noexcept;

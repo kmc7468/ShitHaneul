@@ -3,6 +3,7 @@
 #include <ShitHaneul/Constant.hpp>
 #include <ShitHaneul/Instruction.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -38,6 +39,8 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	class StackFrame;
+
 	class FunctionInfo final {
 	public:
 		std::u32string Name;
@@ -53,6 +56,8 @@ namespace ShitHaneul {
 		std::function<Constant(std::uint64_t, const StringMap&)> BuiltinFunction;
 		ShitHaneul::InstructionList InstructionList;
 
+		std::vector<StackFrame> RecycledStackFrames;
+
 	public:
 		FunctionInfo() noexcept = default;
 		FunctionInfo(StringList&& josaList, std::function<Constant(std::uint64_t, const StringMap&)>&& builtinFunction);
@@ -61,19 +66,23 @@ namespace ShitHaneul {
 
 	public:
 		FunctionInfo& operator=(FunctionInfo&& functionInfo) noexcept;
+
+	public:
+		std::size_t GetStackSize() const noexcept;
+		std::size_t GetStackStartOffset() const noexcept;
 	};
 }
 
 namespace ShitHaneul {
 	class Function final {
 	public:
-		const FunctionInfo* Info = nullptr;
+		FunctionInfo* Info = nullptr;
 		StringMap JosaMap;
 		std::vector<Constant> FreeVariableList;
 
 	public:
 		Function() noexcept = default;
-		explicit Function(const FunctionInfo* info);
+		explicit Function(FunctionInfo* info);
 		Function(const Function& function);
 		Function(Function&& function) noexcept;
 		~Function() = default;

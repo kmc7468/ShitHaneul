@@ -1,6 +1,7 @@
 #include <ShitHaneul/Function.hpp>
 
-#include <cstddef>
+#include <ShitHaneul/Interpreter.hpp>
+
 #include <utility>
 
 namespace ShitHaneul {
@@ -49,7 +50,8 @@ namespace ShitHaneul {
 		StackOperandCount(functionInfo.StackOperandCount), LocalVariableCount(functionInfo.LocalVariableCount),
 		ConstantList(std::move(functionInfo.ConstantList)), GlobalList(std::move(functionInfo.GlobalList)),
 		JosaList(std::move(functionInfo.JosaList)), LineMap(std::move(functionInfo.LineMap)),
-		BuiltinFunction(std::move(functionInfo.BuiltinFunction)), InstructionList(std::move(functionInfo.InstructionList)) {}
+		BuiltinFunction(std::move(functionInfo.BuiltinFunction)), InstructionList(std::move(functionInfo.InstructionList)),
+		RecycledStackFrames(std::move(functionInfo.RecycledStackFrames)) {}
 
 	FunctionInfo& FunctionInfo::operator=(FunctionInfo&& functionInfo) noexcept {
 		Name = std::move(functionInfo.Name);
@@ -64,12 +66,21 @@ namespace ShitHaneul {
 		LineMap = std::move(functionInfo.LineMap);
 		BuiltinFunction = std::move(functionInfo.BuiltinFunction);
 		InstructionList = std::move(functionInfo.InstructionList);
+
+		RecycledStackFrames = std::move(functionInfo.RecycledStackFrames);
 		return *this;
+	}
+
+	std::size_t FunctionInfo::GetStackSize() const noexcept {
+		return static_cast<std::size_t>(StackOperandCount + LocalVariableCount + JosaList.GetCount());
+	}
+	std::size_t FunctionInfo::GetStackStartOffset() const noexcept {
+		return static_cast<std::size_t>(LocalVariableCount + JosaList.GetCount());
 	}
 }
 
 namespace ShitHaneul {
-	Function::Function(const FunctionInfo* info)
+	Function::Function(FunctionInfo* info)
 		: Info(info), JosaMap(info->JosaList) {}
 	Function::Function(const Function& function)
 		: Info(function.Info), JosaMap(function.JosaMap), FreeVariableList(function.FreeVariableList) {}

@@ -9,13 +9,9 @@
 #include <variant>
 
 namespace ShitHaneul {
-	StackFrame::StackFrame(Function* currentFunction)
-		: m_Stack(static_cast<std::size_t>(currentFunction->Info->LocalVariableCount + currentFunction->Info->StackOperandCount + currentFunction->JosaMap.GetCount())),
-		m_Top(static_cast<std::size_t>(currentFunction->Info->LocalVariableCount + currentFunction->JosaMap.GetCount())), m_CurrentFunction(currentFunction) {
-		const std::uint8_t argCount = currentFunction->JosaMap.GetCount();
-		for (std::uint8_t i = 0; i < argCount; ++i) {
-			m_Stack[static_cast<std::size_t>(i)] = currentFunction->JosaMap[i].second;
-		}
+	StackFrame::StackFrame(Function* currentFunction, StackFrame* prevStackFrame)
+		: m_Stack(currentFunction->Info->GetStackSize()) {
+		Recycle(currentFunction, prevStackFrame, false);
 	}
 	StackFrame::StackFrame(StackFrame&& stackFrame) noexcept
 		: m_Stack(std::move(stackFrame.m_Stack)), m_Top(stackFrame.m_Top),
@@ -28,6 +24,28 @@ namespace ShitHaneul {
 		m_CurrentFunction = stackFrame.m_CurrentFunction;
 		m_CurrentOffset = stackFrame.m_CurrentOffset;
 		return *this;
+	}
+
+	void StackFrame::Recycle(Function* currentFunction, StackFrame* prevStackFrame, bool resetLocal) noexcept {
+		m_Top = currentFunction->Info->GetStackStartOffset();
+		m_CurrentFunction = currentFunction;
+
+		const std::uint8_t argCount = currentFunction->JosaMap.GetCount();
+		for (std::uint8_t i = 0; i < argCount; ++i) {
+			const Constant argument = currentFunction->JosaMap[i].second;
+			if (argument.index()) {
+				m_Stack[static_cast<std::size_t>(i)] = argument;
+			} else {
+				m_Stack[static_cast<std::size_t>(i)] = prevStackFrame->GetTop();
+				prevStackFrame->Pop();
+			}
+		}
+
+		if (resetLocal) {
+			for (std::uint32_t i = 0; i < currentFunction->Info->LocalVariableCount; ++i) {
+				m_Stack[static_cast<std::size_t>(i + argCount)] = std::monostate();
+			}
+		}
 	}
 
 	void StackFrame::Push(const Constant& constant) noexcept {
@@ -93,7 +111,7 @@ namespace ShitHaneul {
 		m_ByteFile = std::move(byteFile);
 
 		m_StackTrace.clear();
-		m_StackTrace.emplace_back(m_ByteFile.GetRoot());
+		m_StackTrace.emplace_back(m_ByteFile.GetRoot(), nullptr);
 		m_GlobalVariables.clear();
 		m_Structures.clear();
 
@@ -153,12 +171,25 @@ namespace ShitHaneul {
 				}
 
 				const auto target = std::get<FunctionConstant>(frame.GetTop());
+				frame.Pop();
+				if (!target.Value->Info->BuiltinFunction && target.Value->JosaMap.GetUnboundCount() == strListOperand.GetCount()) {
+					frame.SetCurrentOffset(offset);
+					offset = static_cast<std::uint64_t>(-1);
+					if (target.Value->Info->RecycledStackFrames.size()) {
+						m_StackTrace.push_back(std::move(target.Value->Info->RecycledStackFrames.back()));
+						target.Value->Info->RecycledStackFrames.erase(target.Value->Info->RecycledStackFrames.end() - 1);
+						frame.Recycle(target.Value, &m_StackTrace[m_StackTrace.size() - 2]);
+					} else {
+						m_StackTrace.emplace_back(target.Value, &frame);
+					}
+					break;
+				}
+
 				Function* const newFunc = m_ByteFile.CopyFunction(target.Value);
 				if (!newFunc->Info) {
 					RaiseException(offset, UndefinedFunctionException());
 					return false;
 				}
-				frame.Pop();
 				
 				for (std::uint8_t i = 0; i < strListOperand.GetCount(); ++i) {
 					if (strListOperand[i].second == U"_") {
@@ -184,16 +215,10 @@ namespace ShitHaneul {
 				if (newFunc->JosaMap.GetUnboundCount()) {
 					frame.Push(FunctionConstant(newFunc));
 				} else {
-					if (newFunc->Info->BuiltinFunction) {
-						const Constant result = newFunc->Info->BuiltinFunction(offset, newFunc->JosaMap);
-						if (result.index()) {
-							frame.Push(result);
-						} else return false;
-					} else {
-						frame.SetCurrentOffset(offset);
-						offset = static_cast<std::uint64_t>(-1);
-						m_StackTrace.emplace_back(newFunc);
-					}
+					const Constant result = newFunc->Info->BuiltinFunction(offset, newFunc->JosaMap);
+					if (result.index()) {
+						frame.Push(result);
+					} else return false;
 				}
 				break;
 			}
@@ -557,6 +582,7 @@ namespace ShitHaneul {
 		if (m_StackTrace.size() > 1) {
 			offset = m_StackTrace[m_StackTrace.size() - 2].GetCurrentOffset() + 1;
 			m_StackTrace[m_StackTrace.size() - 2].Push(frame.GetTop());
+			frame.GetCurrentFunction()->Info->RecycledStackFrames.push_back(std::move(frame));
 			m_StackTrace.erase(m_StackTrace.end() - 1);
 			goto start;
 		}
