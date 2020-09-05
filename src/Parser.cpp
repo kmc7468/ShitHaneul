@@ -89,7 +89,7 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	bool Parser::Load(const std::string& path) {
+	bool Parser::Load(const char* path) {
 		std::ifstream stream(path, std::ifstream::binary);
 		if (!stream) return false;
 
@@ -140,7 +140,7 @@ namespace ShitHaneul {
 		info->Name = ReadString();
 		info->Line.Path = ReadString();
 		info->Line.Line = ReadScalar<std::uint16_t>();
-		info->LineMap = ParseLineMap();
+		info->LineMap = ParseLineMap(info->Line);
 		info->InstructionList = ParseInstructionList();
 
 		Function* const result = m_Result.RegisterFunction(info.get());
@@ -201,10 +201,12 @@ namespace ShitHaneul {
 		}
 		return result;
 	}
-	LineMap Parser::ParseLineMap() {
+	LineMap Parser::ParseLineMap(const LineInfo& line) {
 		LineMap result;
 		const auto count = ReadScalar<std::uint64_t>();
-		result.Reserve(count);
+		result.Reserve(count + 2);
+		result.Add(0, std::u32string(line.Path));
+		result.Add(0, line.Line);
 
 		for (std::uint64_t i = 0; i < count; ++i) {
 			const auto offset = ReadScalar<std::uint32_t>();

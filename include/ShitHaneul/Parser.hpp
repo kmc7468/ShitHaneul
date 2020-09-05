@@ -64,7 +64,7 @@ namespace ShitHaneul {
 		Parser& operator=(const Parser&) = delete;
 
 	public:
-		bool Load(const std::string& path);
+		bool Load(const char* path);
 		void Parse();
 		ByteFile GetResult() noexcept;
 
@@ -79,7 +79,7 @@ namespace ShitHaneul {
 		StringList ParseStringList();
 		std::vector<std::size_t> ParseGlobalList();
 		ConstantList ParseConstantList();
-		LineMap ParseLineMap();
+		LineMap ParseLineMap(const LineInfo& line);
 		InstructionList ParseInstructionList();
 		Instruction ParseInstruction();
 		FreeVariableList ParseFreeVariableList();
