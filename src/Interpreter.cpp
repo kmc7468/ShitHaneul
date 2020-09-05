@@ -870,7 +870,7 @@ namespace ShitHaneul {
 			return EncodeUTF8ToUTF32(first, second, third, 0);
 		} else {
 			const char second = std::cin.get(), third = std::cin.get(), fourth = std::cin.get();
-			result.push_back(EncodeUTF8ToUTF32(first, second, third, fourth));
+			return EncodeUTF8ToUTF32(first, second, third, fourth);
 		}
 #endif
 	}
