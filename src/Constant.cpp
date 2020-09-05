@@ -66,10 +66,11 @@ namespace ShitHaneul {
 	FunctionConstant::FunctionConstant(Function* value, bool isForwardDeclared) noexcept
 		: Value(value), IsForwardDeclared(isForwardDeclared) {}
 	FunctionConstant::FunctionConstant(const FunctionConstant& constant) noexcept
-		: Value(constant.Value) {}
+		: Value(constant.Value), IsForwardDeclared(constant.IsForwardDeclared) {}
 
 	FunctionConstant& FunctionConstant::operator=(const FunctionConstant& constant) noexcept {
 		Value = constant.Value;
+		IsForwardDeclared = constant.IsForwardDeclared;
 		return *this;
 	}
 }

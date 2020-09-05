@@ -1,4 +1,4 @@
-﻿#include <ShitHaneul/Interpreter.hpp>
+#include <ShitHaneul/Interpreter.hpp>
 
 #include <ShitHaneul/Memory.hpp>
 
@@ -48,7 +48,7 @@ namespace ShitHaneul {
 	}
 	void StackFrame::StoreDirect(std::uint32_t index, const Constant& constant) {
 		Constant& variable = m_Stack[static_cast<std::size_t>(index)];
-		if (GetType(constant) == Type::Function && std::get<FunctionConstant>(constant).IsForwardDeclared) {
+		if (GetType(variable) == Type::Function && std::get<FunctionConstant>(variable).IsForwardDeclared) {
 			const Function* const func = std::get<FunctionConstant>(constant).Value;
 			Function* const target = std::get<FunctionConstant>(variable).Value;
 			target->FreeVariableList = func->FreeVariableList;
