@@ -1,4 +1,4 @@
-#include <ShitHaneul/Interpreter.hpp>
+﻿#include <ShitHaneul/Interpreter.hpp>
 
 #include <ShitHaneul/Memory.hpp>
 
@@ -48,7 +48,7 @@ namespace ShitHaneul {
 	}
 	void StackFrame::StoreDirect(std::uint32_t index, const Constant& constant) {
 		Constant& variable = m_Stack[static_cast<std::size_t>(index)];
-		if (GetType(variable) == Type::Function && std::get<FunctionConstant>(variable).IsForwardDeclared) {
+		if (variable.index() && GetType(variable) == Type::Function && std::get<FunctionConstant>(variable).IsForwardDeclared) {
 			const Function* const func = std::get<FunctionConstant>(constant).Value;
 			Function* const target = std::get<FunctionConstant>(variable).Value;
 			target->FreeVariableList = func->FreeVariableList;
@@ -633,7 +633,7 @@ namespace ShitHaneul {
 		});
 		RegisterBuiltinFunction(U"난수_가져오다", {}, [&](std::uint64_t, const StringMap&) -> Constant {
 			thread_local std::mt19937_64 mt(std::random_device{}());
-			return IntegerConstant(static_cast<std::int64_t>(mt()));
+			return IntegerConstant(static_cast<std::uint64_t>(mt()));
 		});
 	}
 	Constant Interpreter::ConvertStringToList(const std::u32string& string) {
