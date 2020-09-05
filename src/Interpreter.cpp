@@ -669,15 +669,15 @@ namespace ShitHaneul {
 	std::optional<std::u32string> Interpreter::ConvertListToString(std::uint64_t offset, const Constant& list) {
 		std::u32string result;
 
-		const Constant* current = &list;
+		Constant current = list;
 		Type currentType;
-		while ((currentType = GetType(*current)) != Type::None) {
+		while ((currentType = GetType(current)) != Type::None) {
 			if (currentType != Type::Structure) {
 				RaiseException(offset, InvalidTypeException(u8"구조체", typeName(currentType)));
 				return std::nullopt;
 			}
 
-			const auto node = std::get<StructureConstant>(*current);
+			const auto node = std::get<StructureConstant>(current);
 			const std::optional<Constant> item = (*node.Value)[U"첫번째"];
 			if (item) {
 				if (const auto itemType = GetType(*item); itemType != Type::Character) {
@@ -685,6 +685,7 @@ namespace ShitHaneul {
 					return std::nullopt;
 				}
 				result.push_back(std::get<CharacterConstant>(*item).Value);
+				current = *(*node.Value)[U"나머지"];
 			} else {
 				RaiseException(offset, UndefinedException(u8"필드", u8"첫번째"));
 				return std::nullopt;
