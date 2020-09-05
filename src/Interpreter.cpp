@@ -268,6 +268,7 @@ namespace ShitHaneul {
 
 			case OpCode::FreeVar: {
 				auto& target = std::get<FunctionConstant>(frame.GetTop());
+				Function* const newFunc = m_ByteFile.CopyFunction(target.Value);
 				const auto count = static_cast<std::uint8_t>(freeVarListOperand.size());
 				for (std::uint8_t i = 0; i < count; ++i) {
 					const auto [type, index] = freeVarListOperand[i];
@@ -278,11 +279,12 @@ namespace ShitHaneul {
 							m_ByteFile.AddFunction(dummyFunc.get());
 							variable = FunctionConstant(dummyFunc.release(), true);
 						}
-						target.Value->FreeVariableList.push_back(variable);
+						newFunc->FreeVariableList.push_back(variable);
 					} else {
-						target.Value->FreeVariableList.push_back(frame.GetCurrentFunction()->FreeVariableList[static_cast<std::size_t>(index)]);
+						newFunc->FreeVariableList.push_back(frame.GetCurrentFunction()->FreeVariableList[static_cast<std::size_t>(index)]);
 					}
 				}
+				target.Value = newFunc;
 				break;
 			}
 
