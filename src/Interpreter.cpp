@@ -821,29 +821,22 @@ namespace ShitHaneul {
 
 	char32_t ReadCharacterFromStdin() {
 #ifdef SHN_WINDOWS
-		wchar_t first;
-		std::wcin >> first;
+		const wchar_t first = std::wcin.get();
 		if (0xD800 <= first && first <= 0xDBFF) {
-			wchar_t second;
-			std::wcin >> second;
+			const wchar_t second = std::wcin.get();
 			return (static_cast<char32_t>(first) - 0xD800) * 0x400 + (static_cast<char32_t>(second) - 0xDC00);
 		} else return static_cast<char32_t>(first);
 #else
-		char first;
-		std::cin >> first;
-		const auto first = static_cast<unsigned char>(utf8[i]);
+		const char first = static_cast<unsigned char>(std::cin.get());
 		if (static_cast<unsigned char>(first) < 0x80) return EncodeUTF8ToUTF32(first, 0, 0, 0);
 		else if (static_cast<unsigned char>(first) < 0xE0) {
-			char second;
-			std::cin >> second;
+			const char second = std::cin.get();
 			return EncodeUTF8ToUTF32(first, second, 0, 0);
 		} else if (static_cast<unsigned char>(first) < 0xF0) {
-			char second, third;
-			std::cin >> second >> third;
+			const char second = std::cin.get(), third = std::cin.get();
 			return EncodeUTF8ToUTF32(first, second, third, 0);
 		} else {
-			char second, third, fourth;
-			std::cin >> second >> third >> fourth;
+			const char second = std::cin.get(), third = std::cin.get(), fourth = std::cin.get();
 			result.push_back(EncodeUTF8ToUTF32(first, second, third, fourth));
 		}
 #endif
