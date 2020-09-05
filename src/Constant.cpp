@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <functional>
 
 namespace ShitHaneul {
 	NoneConstant::NoneConstant(const NoneConstant&) noexcept {}
@@ -196,13 +195,12 @@ namespace ShitHaneul {
 		m_List = std::move(stringList.m_List);
 		return *this;
 	}
-	const std::pair<std::size_t, std::u32string>& StringList::operator[](std::uint8_t index) const noexcept {
+	std::u32string_view StringList::operator[](std::uint8_t index) const noexcept {
 		return m_List[static_cast<std::size_t>(index)];
 	}
 
 	void StringList::Add(std::u32string&& string) {
-		const std::size_t hash = std::hash<std::u32string>{}(string);
-		m_List.push_back({ hash, std::move(string) });
+		m_List.push_back(std::move(string));
 	}
 	std::uint8_t StringList::GetCount() const noexcept {
 		return static_cast<std::uint8_t>(m_List.size());
@@ -211,9 +209,8 @@ namespace ShitHaneul {
 		m_List.reserve(static_cast<std::size_t>(count));
 	}
 	bool StringList::Contains(const std::u32string_view& string) const noexcept {
-		const std::size_t hash = std::hash<std::u32string_view>{}(string);
-		return std::find_if(m_List.begin(), m_List.end(), [string, hash](const auto& element) {
-			return element.first == hash && element.second == string;
+		return std::find_if(m_List.begin(), m_List.end(), [string](const auto& element) {
+			return element == string;
 		}) != m_List.end();
 	}
 }
@@ -245,8 +242,7 @@ namespace ShitHaneul {
 	bool StringMap::operator==(const StringMap& other) const noexcept {
 		if (m_Map.size() != other.m_Map.size() || m_BoundCount != other.m_BoundCount) return false;
 		for (std::size_t i = 0; i < m_Map.size(); ++i) {
-			if (m_Map[i].first.first != other.m_Map[i].first.first ||
-				m_Map[i].first.second != other.m_Map[i].first.second) return false;
+			if (m_Map[i].first != other.m_Map[i].first) return false;
 			else if (!Equal(m_Map[i].second, other.m_Map[i].second)) return false;
 		}
 		return true;
@@ -256,12 +252,11 @@ namespace ShitHaneul {
 	}
 	std::pair<std::u32string_view, Constant> StringMap::operator[](std::uint8_t index) const noexcept {
 		const auto& item = m_Map[static_cast<std::size_t>(index)];
-		return { item.first.second, item.second };
+		return { item.first, item.second };
 	}
 	std::optional<Constant> StringMap::operator[](const std::u32string_view& string) const noexcept {
-		const std::size_t hash = std::hash<std::u32string_view>{}(string);
-		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [string, hash](const auto& element) {
-			return element.first.first == hash && element.first.second == string;
+		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [string](const auto& element) {
+			return element.first == string;
 		});
 		if (iter != m_Map.end()) return iter->second;
 		else return std::nullopt;
@@ -294,9 +289,8 @@ namespace ShitHaneul {
 		return BoundResult::Success;
 	}
 	BoundResult StringMap::BindConstant(const std::u32string_view& string, const Constant& constant) {
-		const std::size_t hash = std::hash<std::u32string_view>{}(string);
-		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [string, hash](const auto& element) {
-			return element.first.first == hash && element.first.second == string;
+		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [string](const auto& element) {
+			return element.first == string;
 		});
 
 		if (iter == m_Map.end()) return BoundResult::Undefiend;

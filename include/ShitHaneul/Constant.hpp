@@ -177,7 +177,7 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	class StringList final {
 	private:
-		std::vector<std::pair<std::size_t, std::u32string>> m_List;
+		std::vector<std::u32string> m_List;
 
 	public:
 		StringList() noexcept = default;
@@ -189,7 +189,7 @@ namespace ShitHaneul {
 	public:
 		StringList& operator=(const StringList& stringList);
 		StringList& operator=(StringList&& stringList) noexcept;
-		const std::pair<std::size_t, std::u32string>& operator[](std::uint8_t index) const noexcept;
+		std::u32string_view operator[](std::uint8_t index) const noexcept;
 
 	public:
 		void Add(std::u32string&& string);
@@ -208,7 +208,7 @@ namespace ShitHaneul {
 
 	class StringMap final {
 	private:
-		std::vector<std::pair<std::pair<std::size_t, std::u32string_view>, Constant>> m_Map;
+		std::vector<std::pair<std::u32string_view, Constant>> m_Map;
 		std::uint8_t m_BoundCount = 0;
 
 	public:

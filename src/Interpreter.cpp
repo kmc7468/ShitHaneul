@@ -192,7 +192,7 @@ namespace ShitHaneul {
 				}
 				
 				for (std::uint8_t i = 0; i < strListOperand.GetCount(); ++i) {
-					if (strListOperand[i].second == U"_") {
+					if (strListOperand[i] == U"_") {
 						const BoundResult result = newFunc->JosaMap.BindConstant(frame.GetTop());
 						if (result != BoundResult::Success) {
 							RaiseException(offset,
@@ -201,11 +201,11 @@ namespace ShitHaneul {
 							return false;
 						}
 					} else {
-						const BoundResult result = newFunc->JosaMap.BindConstant(strListOperand[i].second, frame.GetTop());
+						const BoundResult result = newFunc->JosaMap.BindConstant(strListOperand[i], frame.GetTop());
 						if (result != BoundResult::Success) {
 							RaiseException(offset,
-								result == BoundResult::Undefiend ? UndefinedException(u8"조사", EncodeUTF32ToUTF8(strListOperand[i].second)) :
-								AlreadyBoundException(u8"조사", EncodeUTF32ToUTF8(strListOperand[i].second)));
+								result == BoundResult::Undefiend ? UndefinedException(u8"조사", EncodeUTF32ToUTF8(strListOperand[i])) :
+								AlreadyBoundException(u8"조사", EncodeUTF32ToUTF8(strListOperand[i])));
 							return false;
 						}
 					}
@@ -240,8 +240,8 @@ namespace ShitHaneul {
 
 				std::unique_ptr<StringMap> structure(new StringMap(fields));
 				for (std::uint8_t i = 0; i < givenFieldCount; ++i) {
-					if (!fields.Contains(fields[i].second)) {
-						RaiseException(offset, UndefinedException(u8"필드", EncodeUTF32ToUTF8(fields[i].second)));
+					if (!fields.Contains(fields[i])) {
+						RaiseException(offset, UndefinedException(u8"필드", EncodeUTF32ToUTF8(fields[i])));
 						return false;
 					}
 					structure->BindConstant(frame.GetTop());
