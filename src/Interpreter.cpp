@@ -34,9 +34,9 @@ namespace ShitHaneul {
 		for (std::uint8_t i = 0; i < argCount; ++i) {
 			const Constant argument = currentFunction->JosaMap[i].second;
 			if (argument.index()) {
-				m_Stack[static_cast<std::size_t>(i)] = argument;
+				m_Stack[argCount - static_cast<std::size_t>(i) - 1] = argument;
 			} else {
-				m_Stack[static_cast<std::size_t>(i)] = prevStackFrame->GetTop();
+				m_Stack[argCount - static_cast<std::size_t>(i) - 1] = prevStackFrame->GetTop();
 				prevStackFrame->Pop();
 			}
 		}
@@ -237,20 +237,19 @@ namespace ShitHaneul {
 
 			case OpCode::MakeStruct: {
 				const auto& [name, fields] = std::get<std::pair<std::u32string, StringList>>(instruction.Operand);
-				const std::uint8_t expectedFieldCount = fields.GetCount();
+				const StringList& registered = m_Structures[name];
 				const std::uint8_t givenFieldCount = fields.GetCount();
-				if (expectedFieldCount != givenFieldCount) {
-					RaiseException(offset, FieldMismatchException(expectedFieldCount, givenFieldCount));
+				if (registered.GetCount() != givenFieldCount) {
+					RaiseException(offset, FieldMismatchException(registered.GetCount(), givenFieldCount));
 					return false;
 				}
 
-				std::unique_ptr<StringMap> structure(new StringMap(fields));
+				std::unique_ptr<StringMap> structure(new StringMap(registered));
 				for (std::uint8_t i = 0; i < givenFieldCount; ++i) {
-					if (!fields.Contains(fields[i])) {
+					if (structure->BindConstant(fields[i], frame.GetTop()) != BoundResult::Success) {
 						RaiseException(offset, UndefinedException(u8"필드", EncodeUTF32ToUTF8(fields[i])));
 						return false;
 					}
-					structure->BindConstant(frame.GetTop());
 					frame.Pop();
 				}
 

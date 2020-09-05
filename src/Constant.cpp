@@ -275,11 +275,11 @@ namespace ShitHaneul {
 		return GetCount() - GetBoundCount();
 	}
 	BoundResult StringMap::BindConstant(const Constant& constant) {
-		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [](const auto& element) {
+		const auto iter = std::find_if(m_Map.rbegin(), m_Map.rend(), [](const auto& element) {
 			return !element.second.index();
 		});
 
-		if (iter == m_Map.end()) {
+		if (iter == m_Map.rend()) {
 			if (m_Map.size() == 0) return BoundResult::Undefiend;
 			else return BoundResult::AlreadyBound;
 		}
@@ -289,11 +289,11 @@ namespace ShitHaneul {
 		return BoundResult::Success;
 	}
 	BoundResult StringMap::BindConstant(const std::u32string_view& string, const Constant& constant) {
-		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [string](const auto& element) {
+		const auto iter = std::find_if(m_Map.rbegin(), m_Map.rend(), [string](const auto& element) {
 			return element.first == string;
 		});
 
-		if (iter == m_Map.end()) return BoundResult::Undefiend;
+		if (iter == m_Map.rend()) return BoundResult::Undefiend;
 		else if (iter->second.index()) return BoundResult::AlreadyBound;
 
 		iter->second = constant;
