@@ -61,11 +61,16 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	class Interpreter final {
 	private:
+		struct Linear {
+			std::size_t operator()(std::size_t value) const noexcept;
+		};
+
+	private:
 		ByteFile m_ByteFile;
 		Exception m_Exception;
 
 		std::vector<StackFrame> m_StackTrace;
-		std::unordered_map<std::u32string, Constant> m_GlobalVariables;
+		std::unordered_map<std::size_t, Constant, Linear> m_GlobalVariables;
 		std::unordered_map<std::u32string, StringList> m_Structures;
 
 	public:

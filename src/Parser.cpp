@@ -11,7 +11,8 @@
 
 namespace ShitHaneul {
 	ByteFile::ByteFile(ByteFile&& byteFile) noexcept
-		: m_FunctionInfos(std::move(byteFile.m_FunctionInfos)), m_Functions(std::move(byteFile.m_Functions)),
+		: m_GlobalMap(std::move(byteFile.m_GlobalMap)),
+		m_FunctionInfos(std::move(byteFile.m_FunctionInfos)), m_Functions(std::move(byteFile.m_Functions)),
 		m_RootFunction(byteFile.m_RootFunction),
 		m_Structures(std::move(byteFile.m_Structures)) {}
 	ByteFile::~ByteFile() {
@@ -19,6 +20,8 @@ namespace ShitHaneul {
 	}
 
 	ByteFile& ByteFile::operator=(ByteFile&& byteFile) noexcept {
+		m_GlobalMap = std::move(byteFile.m_GlobalMap);
+
 		m_FunctionInfos = std::move(byteFile.m_FunctionInfos);
 		m_Functions = std::move(byteFile.m_Functions);
 		m_RootFunction = byteFile.m_RootFunction;
@@ -28,6 +31,8 @@ namespace ShitHaneul {
 	}
 
 	void ByteFile::Clear() noexcept {
+		m_GlobalMap.clear();
+
 		static constexpr auto deleter = [](auto pointer) {
 			delete pointer;
 		};
@@ -35,6 +40,14 @@ namespace ShitHaneul {
 		std::for_each(m_FunctionInfos.begin(), m_FunctionInfos.end(), deleter);
 		std::for_each(m_Functions.begin(), m_Functions.end(), deleter);
 		std::for_each(m_Structures.begin(), m_Structures.end(), deleter);
+	}
+
+	std::size_t ByteFile::GetGlobalIndex(const std::u32string& name) {
+		std::size_t& index = m_GlobalMap[name];
+		if (!index) {
+			index = m_GlobalMap.size();
+		}
+		return index;
 	}
 
 	Function* ByteFile::RegisterFunction(FunctionInfo* functionInfo) {
@@ -143,13 +156,13 @@ namespace ShitHaneul {
 		}
 		return result;
 	}
-	std::vector<std::u32string> Parser::ParseGlobalList() {
-		std::vector<std::u32string> result;
+	std::vector<std::size_t> Parser::ParseGlobalList() {
+		std::vector<std::size_t> result;
 		const auto count = ReadScalar<std::uint64_t>();
 		result.reserve(static_cast<std::size_t>(count));
 
 		for (std::uint64_t i = 0; i < count; ++i) {
-			result.push_back(ReadString());
+			result.push_back(m_Result.GetGlobalIndex(ReadString()));
 		}
 		return result;
 	}

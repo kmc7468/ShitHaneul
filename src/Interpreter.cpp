@@ -107,6 +107,12 @@ namespace {
 }
 
 namespace ShitHaneul {
+	std::size_t Interpreter::Linear::operator()(std::size_t value) const noexcept {
+		return value;
+	}
+}
+
+namespace ShitHaneul {
 	void Interpreter::Load(ByteFile&& byteFile) {
 		m_ByteFile = std::move(byteFile);
 
@@ -598,7 +604,7 @@ namespace ShitHaneul {
 	void Interpreter::RegisterBuiltinFunction(const std::u32string& name, StringList&& josaList,
 		std::function<Constant(std::uint64_t, const StringMap&)>&& builtinFunction) {
 		std::unique_ptr<FunctionInfo> function(new FunctionInfo(std::move(josaList), std::move(builtinFunction)));
-		m_GlobalVariables[name] = FunctionConstant(m_ByteFile.RegisterFunction(function.get()));
+		m_GlobalVariables[m_ByteFile.GetGlobalIndex(name)] = FunctionConstant(m_ByteFile.RegisterFunction(function.get()));
 		function.release();
 	}
 	void Interpreter::RegisterBuiltinFunctions() {

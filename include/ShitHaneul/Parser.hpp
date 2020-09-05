@@ -7,11 +7,14 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace ShitHaneul {
 	class ByteFile final {
 	private:
+		std::unordered_map<std::u32string, std::size_t> m_GlobalMap;
+
 		std::vector<FunctionInfo*> m_FunctionInfos;
 		std::vector<Function*> m_Functions;
 		Function* m_RootFunction = nullptr;
@@ -19,7 +22,7 @@ namespace ShitHaneul {
 		std::vector<StringMap*> m_Structures;
 
 	public:
-		ByteFile() noexcept = default;
+		ByteFile() = default;
 		ByteFile(ByteFile&& byteFile) noexcept;
 		~ByteFile();
 
@@ -28,6 +31,8 @@ namespace ShitHaneul {
 
 	public:
 		void Clear() noexcept;
+
+		std::size_t GetGlobalIndex(const std::u32string& name);
 
 		Function* RegisterFunction(FunctionInfo* functionInfo);
 		void AddFunction(Function* function);
@@ -51,7 +56,7 @@ namespace ShitHaneul {
 		ByteFile m_Result;
 
 	public:
-		Parser() noexcept = default;
+		Parser() = default;
 		Parser(const Parser&) = delete;
 		~Parser() = default;
 
@@ -72,7 +77,7 @@ namespace ShitHaneul {
 
 		Function* ParseFunction();
 		StringList ParseStringList();
-		std::vector<std::u32string> ParseGlobalList();
+		std::vector<std::size_t> ParseGlobalList();
 		ConstantList ParseConstantList();
 		LineMap ParseLineMap();
 		InstructionList ParseInstructionList();
