@@ -41,9 +41,12 @@ namespace ShitHaneul {
 		std::for_each(m_Structures.begin(), m_Structures.end(), deleter);
 	}
 
-	std::size_t ByteFile::GetGlobalIndex(const std::u32string& name) {
+	std::size_t ByteFile::GetGlobalCount() const noexcept {
+		return m_GlobalMap.size();
+	}
+	std::size_t ByteFile::GetGlobalIndex(const std::u32string& name, bool createNewIndex) {
 		std::size_t& index = m_GlobalMap[name];
-		if (!index) {
+		if (createNewIndex && !index) {
 			index = m_GlobalMap.size();
 		}
 		return index;

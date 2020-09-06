@@ -32,7 +32,8 @@ namespace ShitHaneul {
 	public:
 		void Clear() noexcept;
 
-		std::size_t GetGlobalIndex(const std::u32string& name);
+		std::size_t GetGlobalCount() const noexcept;
+		std::size_t GetGlobalIndex(const std::u32string& name, bool createNewIndex = true);
 
 		Function* RegisterFunction(FunctionInfo* functionInfo);
 		void AddFunction(Function* function);
