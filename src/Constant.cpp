@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 
 namespace ShitHaneul {
 	NoneConstant::NoneConstant(const NoneConstant&) noexcept {}
@@ -88,7 +89,7 @@ namespace ShitHaneul {
 
 namespace ShitHaneul {
 	Type GetType(const Constant& constant) noexcept {
-		assert(constant.index() > 0);
+		assert(constant.index());
 		return static_cast<Type>(constant.index() - 1);
 	}
 	bool Equal(const Constant& lhs, const Constant& rhs) noexcept {
@@ -111,6 +112,7 @@ namespace ShitHaneul {
 			else return false;
 		case Type::Function: return false;
 		case Type::Structure: return lhsType == rhsType && *std::get<StructureConstant>(lhs).Value == *std::get<StructureConstant>(rhs).Value;
+		default: return false;
 		}
 	}
 	std::u32string ToString(const Constant& constant) {
@@ -149,6 +151,7 @@ namespace ShitHaneul {
 			}
 			return result += U'}';
 		}
+		default: return U"";
 		}
 	}
 }
@@ -177,11 +180,8 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	StringList::StringList(std::vector<std::u32string>&& list) {
-		for (std::u32string& string : list) {
-			Add(std::move(string));
-		}
-	}
+	StringList::StringList(std::vector<std::u32string>&& list)
+		: m_List(std::move(list)) {}
 	StringList::StringList(const StringList& stringList)
 		: m_List(stringList.m_List) {}
 	StringList::StringList(StringList&& stringList) noexcept
@@ -219,7 +219,6 @@ namespace ShitHaneul {
 	StringMap::StringMap(const StringList& stringList) {
 		const std::uint8_t count = stringList.GetCount();
 		m_Map.reserve(static_cast<std::size_t>(count));
-
 		for (std::uint8_t i = 0; i < count; ++i) {
 			m_Map.push_back({ stringList[i], {} });
 		}
@@ -251,14 +250,13 @@ namespace ShitHaneul {
 		return !(*this == other);
 	}
 	std::pair<std::u32string_view, Constant> StringMap::operator[](std::uint8_t index) const noexcept {
-		const auto& item = m_Map[static_cast<std::size_t>(index)];
-		return { item.first, item.second };
+		return m_Map[static_cast<std::size_t>(index)];
 	}
 	std::optional<Constant> StringMap::operator[](const std::u32string_view& string) const noexcept {
-		const auto iter = std::find_if(m_Map.begin(), m_Map.end(), [string](const auto& element) {
+		const auto iter = std::find_if(m_Map.rbegin(), m_Map.rend(), [string](const auto& element) {
 			return element.first == string;
 		});
-		if (iter != m_Map.end()) return iter->second;
+		if (iter != m_Map.rend()) return iter->second;
 		else return std::nullopt;
 	}
 
@@ -278,26 +276,25 @@ namespace ShitHaneul {
 		const auto iter = std::find_if(m_Map.rbegin(), m_Map.rend(), [](const auto& element) {
 			return !element.second.index();
 		});
-
 		if (iter == m_Map.rend()) {
 			if (m_Map.size() == 0) return BoundResult::Undefiend;
 			else return BoundResult::AlreadyBound;
+		} else {
+			iter->second = constant;
+			++m_BoundCount;
+			return BoundResult::Success;
 		}
-
-		iter->second = constant;
-		++m_BoundCount;
-		return BoundResult::Success;
 	}
 	BoundResult StringMap::BindConstant(const std::u32string_view& string, const Constant& constant) {
 		const auto iter = std::find_if(m_Map.rbegin(), m_Map.rend(), [string](const auto& element) {
 			return element.first == string;
 		});
-
 		if (iter == m_Map.rend()) return BoundResult::Undefiend;
 		else if (iter->second.index()) return BoundResult::AlreadyBound;
-
-		iter->second = constant;
-		++m_BoundCount;
-		return BoundResult::Success;
+		else {
+			iter->second = constant;
+			++m_BoundCount;
+			return BoundResult::Success;
+		}
 	}
 }

@@ -1,5 +1,6 @@
 ﻿#include <ShitHaneul/Interpreter.hpp>
 
+#include <ShitHaneul/Instruction.hpp>
 #include <ShitHaneul/Memory.hpp>
 
 #include <iostream>
@@ -56,6 +57,9 @@ namespace ShitHaneul {
 	}
 	Constant& StackFrame::GetTop() noexcept {
 		return m_Stack[m_Top - 1];
+	}
+	Constant StackFrame::GetTopAndPop() noexcept {
+		return m_Stack[--m_Top];
 	}
 	Constant& StackFrame::GetUnderTop() noexcept {
 		return m_Stack[m_Top - 2];
@@ -125,6 +129,7 @@ namespace ShitHaneul {
 	}
 	bool Interpreter::Interpret() {
 #define frame m_StackTrace.back()
+#define prevFrame m_StackTrace[m_StackTrace.size() - 2]
 #define func frame.GetCurrentFunction()
 #define funcInfo func->Info
 #define intOperand std::get<std::uint32_t>(instruction.Operand)
@@ -159,8 +164,7 @@ namespace ShitHaneul {
 				break;
 
 			case OpCode::StoreGlobal:
-				m_GlobalVariables[funcInfo->GlobalList[static_cast<std::size_t>(intOperand)]] = frame.GetTop();
-				frame.Pop();
+				m_GlobalVariables[funcInfo->GlobalList[static_cast<std::size_t>(intOperand)]] = frame.GetTopAndPop();
 				break;
 
 			case OpCode::LoadGlobal:
@@ -176,30 +180,27 @@ namespace ShitHaneul {
 					return false;
 				}
 
-				const auto target = std::get<FunctionConstant>(frame.GetTop());
-				frame.Pop();
-				if (!target.Value->Info->BuiltinFunction && target.Value->JosaMap.GetUnboundCount() == strListOperand.GetCount()) {
+				const auto target = std::get<FunctionConstant>(frame.GetTopAndPop());
+				if (!target.Value->Info) {
+					RaiseException(offset, UndefinedFunctionException());
+					return false;
+				} else if (!target.Value->Info->BuiltinFunction && target.Value->JosaMap.GetUnboundCount() == strListOperand.GetCount()) {
 					frame.SetCurrentOffset(offset);
 					offset = static_cast<std::uint64_t>(-1);
-					if (target.Value->Info->RecycledStackFrames.size()) {
-						m_StackTrace.push_back(std::move(target.Value->Info->RecycledStackFrames.back()));
-						target.Value->Info->RecycledStackFrames.erase(target.Value->Info->RecycledStackFrames.end() - 1);
-						frame.Recycle(target.Value, &m_StackTrace[m_StackTrace.size() - 2]);
+
+					if (target.Value->Info->IsRecyclable()) {
+						m_StackTrace.push_back(target.Value->Info->Recycle());
+						frame.Recycle(target.Value, &prevFrame);
 					} else {
 						m_StackTrace.emplace_back(target.Value, &frame);
 					}
 					break;
 				}
 
-				Function* const newFunc = m_ByteFile.CopyFunction(target.Value);
-				if (!newFunc->Info) {
-					RaiseException(offset, UndefinedFunctionException());
-					return false;
-				}
-				
+				const auto newFunc = m_ByteFile.CopyFunction(target.Value);
 				for (std::uint8_t i = 0; i < strListOperand.GetCount(); ++i) {
 					if (strListOperand[i] == U"_") {
-						const BoundResult result = newFunc->JosaMap.BindConstant(frame.GetTop());
+						const BoundResult result = newFunc->JosaMap.BindConstant(frame.GetTopAndPop());
 						if (result != BoundResult::Success) {
 							RaiseException(offset,
 								result == BoundResult::Undefiend ? NoJosaException(EncodeUTF32ToUTF8(newFunc->Info->Name)) :
@@ -207,7 +208,7 @@ namespace ShitHaneul {
 							return false;
 						}
 					} else {
-						const BoundResult result = newFunc->JosaMap.BindConstant(strListOperand[i], frame.GetTop());
+						const BoundResult result = newFunc->JosaMap.BindConstant(strListOperand[i], frame.GetTopAndPop());
 						if (result != BoundResult::Success) {
 							RaiseException(offset,
 								result == BoundResult::Undefiend ? UndefinedException(u8"조사", EncodeUTF32ToUTF8(strListOperand[i])) :
@@ -215,7 +216,6 @@ namespace ShitHaneul {
 							return false;
 						}
 					}
-					frame.Pop();
 				}
 
 				if (newFunc->JosaMap.GetUnboundCount()) {
@@ -246,11 +246,10 @@ namespace ShitHaneul {
 
 				std::unique_ptr<StringMap> structure(new StringMap(registered));
 				for (std::uint8_t i = 0; i < givenFieldCount; ++i) {
-					if (structure->BindConstant(fields[i], frame.GetTop()) != BoundResult::Success) {
+					if (structure->BindConstant(fields[i], frame.GetTopAndPop()) != BoundResult::Success) {
 						RaiseException(offset, UndefinedException(u8"필드", EncodeUTF32ToUTF8(fields[i])));
 						return false;
 					}
-					frame.Pop();
 				}
 
 				frame.Push(StructureConstant(structure.get()));
@@ -265,9 +264,7 @@ namespace ShitHaneul {
 					return false;
 				}
 
-				const auto target = std::get<StructureConstant>(frame.GetTop());
-				frame.Pop();
-
+				const auto target = std::get<StructureConstant>(frame.GetTopAndPop());
 				const std::optional<Constant> field = (*target.Value)[strOperand];
 				if (field) {
 					frame.Push(*field);
@@ -288,17 +285,17 @@ namespace ShitHaneul {
 					return false;
 				}
 
-				const auto target = std::get<BooleanConstant>(frame.GetTop());
+				const auto target = std::get<BooleanConstant>(frame.GetTopAndPop());
 				if (!target.Value) {
 					offset = intOperand - 1;
 				}
-				frame.Pop();
 				break;
 			}
 
 			case OpCode::FreeVar: {
 				auto& target = std::get<FunctionConstant>(frame.GetTop());
-				Function* const newFunc = m_ByteFile.CopyFunction(target.Value);
+				const auto newFunc = m_ByteFile.CopyFunction(target.Value);
+
 				const auto count = static_cast<std::uint8_t>(freeVarListOperand.size());
 				for (std::uint8_t i = 0; i < count; ++i) {
 					const auto [type, index] = freeVarListOperand[i];
@@ -319,23 +316,18 @@ namespace ShitHaneul {
 			}
 
 			case OpCode::Add: {
-				Constant& top = frame.GetTop();
-				Constant& underTop = frame.GetUnderTop();
+				const Constant top = frame.GetTopAndPop(), underTop = frame.GetTopAndPop();
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
-						frame.Pop(); frame.Pop();
 						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value + std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value + std::get<RealConstant>(top).Value));
 					} else goto addError;
 				} else if (underTopType == Type::Real) {
 					if (topType == Type::Integer) {
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value + std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value + std::get<RealConstant>(top).Value));
 					} else goto addError;
 				} else {
@@ -347,23 +339,18 @@ namespace ShitHaneul {
 			}
 
 			case OpCode::Subtract: {
-				Constant& top = frame.GetTop();
-				Constant& underTop = frame.GetUnderTop();
+				const Constant top = frame.GetTopAndPop(), underTop = frame.GetTopAndPop();
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
-						frame.Pop(); frame.Pop();
 						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value - std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value - std::get<RealConstant>(top).Value));
 					} else goto subError;
 				} else if (underTopType == Type::Real) {
 					if (topType == Type::Integer) {
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value - std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value - std::get<RealConstant>(top).Value));
 					} else goto subError;
 				} else {
@@ -375,23 +362,18 @@ namespace ShitHaneul {
 			}
 
 			case OpCode::Multiply: {
-				Constant& top = frame.GetTop();
-				Constant& underTop = frame.GetUnderTop();
+				const Constant top = frame.GetTopAndPop(), underTop = frame.GetTopAndPop();
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
-						frame.Pop(); frame.Pop();
 						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value * std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value * std::get<RealConstant>(top).Value));
 					} else goto mulError;
 				} else if (underTopType == Type::Real) {
-					frame.Pop(); frame.Pop();
 					if (topType == Type::Integer) {
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value * std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value * std::get<RealConstant>(top).Value));
 					} else goto mulError;
 				} else {
@@ -403,23 +385,19 @@ namespace ShitHaneul {
 			}
 
 			case OpCode::Divide: {
-				Constant& top = frame.GetTop();
-				Constant& underTop = frame.GetUnderTop();
+				const Constant top = frame.GetTopAndPop(), underTop = frame.GetTopAndPop();
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
 						if (std::get<IntegerConstant>(top).Value == 0) goto divZeroError;
-						frame.Pop(); frame.Pop();
 						frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value / std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
 						if (std::get<RealConstant>(top).Value == 0) goto divZeroError;
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<IntegerConstant>(underTop).Value / std::get<RealConstant>(top).Value));
 					} else goto divError;
 				} else if (underTopType == Type::Real) {
 					if (topType == Type::Integer) {
 						if (std::get<IntegerConstant>(top).Value == 0) goto divZeroError;
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value / std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
 						if (std::get<RealConstant>(top).Value == 0) {
@@ -427,7 +405,6 @@ namespace ShitHaneul {
 							RaiseException(offset, DivideByZeroException());
 							return false;
 						}
-						frame.Pop(); frame.Pop();
 						frame.Push(RealConstant(std::get<RealConstant>(underTop).Value / std::get<RealConstant>(top).Value));
 					} else goto divError;
 				} else {
@@ -439,8 +416,7 @@ namespace ShitHaneul {
 			}
 
 			case OpCode::Mod: {
-				Constant& top = frame.GetTop();
-				Constant& underTop = frame.GetUnderTop();
+				const Constant top = frame.GetTopAndPop(), underTop = frame.GetTopAndPop();
 				if (const auto topType = GetType(top), underTopType = GetType(underTop); topType != underTopType || topType != Type::Integer) {
 					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"나머지"));
 					return false;
@@ -450,43 +426,34 @@ namespace ShitHaneul {
 					RaiseException(offset, DivideByZeroException());
 					return false;
 				}
-				frame.Pop(); frame.Pop();
 				frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value % std::get<IntegerConstant>(top).Value));
 				break;
 			}
 
 			case OpCode::Equal: {
-				Constant& top = frame.GetTop();
-				Constant& underTop = frame.GetUnderTop();
-				const auto topType = GetType(top), underTopType = GetType(underTop);
-				if (underTopType == Type::Function) {
-					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"비교"));
+				const Constant top = frame.GetTopAndPop(), underTop = frame.GetTopAndPop();
+				if (const auto underTopType = GetType(underTop); underTopType == Type::Function) {
+					RaiseException(offset, BinaryTypeException(u8"함수", typeName(GetType(top)), u8"비교"));
 					return false;
 				} else {
-					frame.Pop(); frame.Pop();
 					frame.Push(BooleanConstant(Equal(underTop, top)));
 				}
 				break;
 			}
 
-			case OpCode::LessThan : {
-				Constant& top = frame.GetTop();
-				Constant& underTop = frame.GetUnderTop();
+			case OpCode::LessThan: {
+				const Constant top = frame.GetTopAndPop(), underTop = frame.GetTopAndPop();
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
-						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value < std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
-						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value < std::get<RealConstant>(top).Value));
 					} else goto lessThanError;
 				} else if (underTopType == Type::Real) {
 					if (topType == Type::Integer) {
-						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value < std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
-						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value < std::get<RealConstant>(top).Value));
 					} else goto lessThanError;
 				} else {
@@ -498,23 +465,18 @@ namespace ShitHaneul {
 			}
 
 			case OpCode::GreaterThan: {
-				Constant& top = frame.GetTop();
-				Constant& underTop = frame.GetUnderTop();
+				const Constant top = frame.GetTopAndPop(), underTop = frame.GetTopAndPop();
 				const auto topType = GetType(top), underTopType = GetType(underTop);
 				if (underTopType == Type::Integer) {
 					if (topType == Type::Integer) {
-						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value > std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
-						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<IntegerConstant>(underTop).Value > std::get<RealConstant>(top).Value));
 					} else goto greaterThanError;
 				} else if (underTopType == Type::Real) {
 					if (topType == Type::Integer) {
-						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value > std::get<IntegerConstant>(top).Value));
 					} else if (topType == Type::Real) {
-						frame.Pop(); frame.Pop();
 						frame.Push(BooleanConstant(std::get<RealConstant>(underTop).Value > std::get<RealConstant>(top).Value));
 					} else goto greaterThanError;
 				} else {
@@ -527,20 +489,17 @@ namespace ShitHaneul {
 
 			case OpCode::Negate: {
 				Constant& top = frame.GetTop();
-				if (!std::visit(Overload{
-					[](IntegerConstant& constant) {
-						constant.Value = -constant.Value;
-						return true;
-					},
-					[](RealConstant& constant) {
-						constant.Value = -constant.Value;
-						return true;
-					},
-					[&](auto& constant) {
-						RaiseException(offset, UnaryTypeException(typeName(GetType(constant)), u8"부호 반전"));
-						return false;
-					}
-				}, top)) return false;
+				const auto type = GetType(top);
+				if (type == Type::Integer) {
+					std::int64_t& value = std::get<IntegerConstant>(top).Value;
+					value = -value;
+				} else if (type == Type::Real) {
+					double& value = std::get<RealConstant>(top).Value;
+					value = -value;
+				} else {
+					RaiseException(offset, UnaryTypeException(typeName(type), u8"부호 반전"));
+					return false;
+				}
 				break;
 			}
 
@@ -557,27 +516,23 @@ namespace ShitHaneul {
 			}
 
 			case OpCode::LogicAnd: {
-				Constant& top = frame.GetTop();
-				Constant& underTop = frame.GetUnderTop();
+				const Constant top = frame.GetTopAndPop(), underTop = frame.GetTopAndPop();
 				if (const auto topType = GetType(top), underTopType = GetType(underTop); topType != underTopType || topType != Type::Boolean) {
 					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"그리고"));
 					return false;
 				}
 
-				frame.Pop(); frame.Pop();
 				frame.Push(BooleanConstant(std::get<BooleanConstant>(underTop).Value && std::get<BooleanConstant>(top).Value));
 				break;
 			}
 
 			case OpCode::LogicOr: {
-				Constant& top = frame.GetTop();
-				Constant& underTop = frame.GetUnderTop();
+				const Constant top = frame.GetTopAndPop(), underTop = frame.GetTopAndPop();
 				if (const auto topType = GetType(top), underTopType = GetType(underTop); topType != underTopType || topType != Type::Boolean) {
 					RaiseException(offset, BinaryTypeException(typeName(underTopType), typeName(topType), u8"또는"));
 					return false;
 				}
 
-				frame.Pop(); frame.Pop();
 				frame.Push(BooleanConstant(std::get<BooleanConstant>(underTop).Value || std::get<BooleanConstant>(top).Value));
 				break;
 			}
@@ -585,9 +540,9 @@ namespace ShitHaneul {
 		}
 
 		if (m_StackTrace.size() > 1) {
-			offset = m_StackTrace[m_StackTrace.size() - 2].GetCurrentOffset() + 1;
-			m_StackTrace[m_StackTrace.size() - 2].Push(frame.GetTop());
-			frame.GetCurrentFunction()->Info->RecycledStackFrames.push_back(std::move(frame));
+			offset = prevFrame.GetCurrentOffset() + 1;
+			prevFrame.Push(frame.GetTop());
+			funcInfo->Recycle(std::move(frame));
 			m_StackTrace.erase(m_StackTrace.end() - 1);
 			goto start;
 		}
@@ -668,13 +623,13 @@ namespace ShitHaneul {
 		});
 	}
 	Constant Interpreter::ConvertStringToList(const std::u32string& string) {
-		if (string.empty()) return NoneConstant();
+		if (string.empty()) return NoneConstant{};
 
-		thread_local const StringList nodeFields = []() {
-			StringList nodeFields;
-			nodeFields.Add(U"첫번째");
-			nodeFields.Add(U"나머지");
-			return nodeFields;
+		static const StringList nodeFields = []() {
+			StringList result;
+			result.Add(U"나머지");
+			result.Add(U"첫번째");
+			return result;
 		}();
 		const StringMap nodeBase(nodeFields);
 
@@ -793,16 +748,15 @@ namespace ShitHaneul {
 
 namespace ShitHaneul {
 	char32_t EncodeUTF8ToUTF32(char first, char second, char third, char fourth) noexcept {
-		if (second == 0) return static_cast<char32_t>(first);
-		else if (third == 0) return ((static_cast<char32_t>(first) & 0x1F) << 6) + (static_cast<char32_t>(second) & 0x3F);
-		else if (fourth == 0) return ((static_cast<char32_t>(first) & 0x0F) << 12) + ((static_cast<char32_t>(second) & 0x3F) << 6) +
-			(static_cast<char32_t>(third) & 0x3F);
-		else return ((static_cast<char32_t>(first) & 0x07) << 18) + ((static_cast<char32_t>(second) & 0x3F) << 12) +
-			((static_cast<char32_t>(second) & 0x3F) << 6) + (static_cast<char32_t>(fourth) & 0x3F);
+		if (!second) return static_cast<char32_t>(first);
+		else if (!third) return ((static_cast<char32_t>(first) & 0x1F) << 6) + (static_cast<char32_t>(second) & 0x3F);
+		else if (!fourth) return ((static_cast<char32_t>(first) & 0x0F) << 12) + ((static_cast<char32_t>(second) & 0x3F) << 6)
+			+ (static_cast<char32_t>(third) & 0x3F);
+		else return ((static_cast<char32_t>(first) & 0x07) << 18) + ((static_cast<char32_t>(second) & 0x3F) << 12)
+			+ ((static_cast<char32_t>(second) & 0x3F) << 6) + (static_cast<char32_t>(fourth) & 0x3F);
 	}
 	std::u32string EncodeUTF8ToUTF32(const std::string_view& utf8) {
 		std::u32string result;
-
 		for (std::size_t i = 0; i < utf8.size();) {
 			const auto first = static_cast<unsigned char>(utf8[i]);
 			if (first < 0x80) {
@@ -823,7 +777,6 @@ namespace ShitHaneul {
 	}
 	std::string EncodeUTF32ToUTF8(char32_t character) {
 		std::string result;
-
 		if (character < 0x80) {
 			result.push_back(static_cast<char>(character));
 		} else if (character < 0x0800) {
@@ -843,7 +796,6 @@ namespace ShitHaneul {
 	}
 	std::string EncodeUTF32ToUTF8(const std::u32string_view& utf32) {
 		std::string result;
-
 		for (char32_t c : utf32) {
 			const std::string temp = EncodeUTF32ToUTF8(c);
 			result.insert(result.end(), temp.begin(), temp.end());
@@ -905,15 +857,7 @@ namespace ShitHaneul {
 				c = EncodeUTF8ToUTF32(string[i], string[i + 1], string[i + 2], string[i + 3]);
 				i += 4;
 			}
-
-			if (c < 0x10000) {
-				std::wcout << static_cast<wchar_t>(c);
-			} else {
-				c -= 0x10000;
-				const wchar_t highSurrogate = static_cast<wchar_t>((c / 0x400) + 0xD800);
-				const wchar_t lowSurrogate = static_cast<wchar_t>((c % 0x400) + 0xDC00);
-				std::wcout << highSurrogate << lowSurrogate;
-			}
+			WriteCharacterToStdout(c);
 		}
 #else
 		std::cout << string;

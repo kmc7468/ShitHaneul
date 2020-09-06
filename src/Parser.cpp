@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <fstream>
-#include <functional>
 #include <ios>
 #include <memory>
 #include <utility>
@@ -148,9 +147,9 @@ namespace ShitHaneul {
 	}
 	StringList Parser::ParseStringList() {
 		StringList result;
+
 		const auto count = ReadScalar<std::uint8_t>();
 		result.Reserve(count);
-
 		for (std::uint8_t i = 0; i < count; ++i) {
 			result.Add(ReadString<std::uint8_t>());
 		}
@@ -158,9 +157,9 @@ namespace ShitHaneul {
 	}
 	std::vector<std::size_t> Parser::ParseGlobalList() {
 		std::vector<std::size_t> result;
+
 		const auto count = ReadScalar<std::uint64_t>();
 		result.reserve(static_cast<std::size_t>(count));
-
 		for (std::uint64_t i = 0; i < count; ++i) {
 			result.push_back(m_Result.GetGlobalIndex(ReadString()));
 		}
@@ -168,9 +167,9 @@ namespace ShitHaneul {
 	}
 	ConstantList Parser::ParseConstantList() {
 		ConstantList result;
+
 		const auto count = ReadScalar<std::uint64_t>();
 		result.Reserve(count);
-
 		for (std::uint64_t i = 0; i < count; ++i) {
 			const auto type = ReadScalar<Type>();
 			switch (type) {
@@ -203,10 +202,10 @@ namespace ShitHaneul {
 	}
 	LineMap Parser::ParseLineMap(const LineInfo& line) {
 		LineMap result;
+
 		const auto count = ReadScalar<std::uint64_t>();
 		result.Reserve(count + 2);
-		result.Add(0, std::u32string(line.Path));
-		result.Add(0, line.Line);
+		result.Add(0, line.Line, std::u32string(line.Path));
 
 		for (std::uint64_t i = 0; i < count; ++i) {
 			const auto offset = ReadScalar<std::uint32_t>();
@@ -221,9 +220,9 @@ namespace ShitHaneul {
 	}
 	InstructionList Parser::ParseInstructionList() {
 		InstructionList result;
+
 		const auto count = ReadScalar<std::uint64_t>();
 		result.Reserve(count);
-
 		for (std::uint64_t i = 0; i < count; ++i) {
 			result.Add(ParseInstruction());
 		}
@@ -231,8 +230,8 @@ namespace ShitHaneul {
 	}
 	Instruction Parser::ParseInstruction() {
 		Instruction result;
-		result.OpCode = ReadScalar<OpCode>();
 
+		result.OpCode = ReadScalar<OpCode>();
 		switch (result.OpCode) {
 		case OpCode::Push:
 		case OpCode::LoadLocal:
@@ -268,9 +267,9 @@ namespace ShitHaneul {
 	}
 	FreeVariableList Parser::ParseFreeVariableList() {
 		FreeVariableList result;
+
 		const auto count = ReadScalar<std::uint8_t>();
 		result.reserve(static_cast<std::size_t>(count));
-
 		for (std::uint8_t i = 0; i < count; ++i) {
 			const auto variableType = ReadScalar<VariableType>();
 			const auto index = ReadScalar<std::uint8_t>();

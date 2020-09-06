@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <functional>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace ShitHaneul {
@@ -33,6 +32,7 @@ namespace ShitHaneul {
 	public:
 		void Add(std::uint64_t offset, std::uint16_t line);
 		void Add(std::uint64_t offset, std::u32string&& path);
+		void Add(std::uint64_t offset, std::uint16_t line, std::u32string&& path);
 		std::uint64_t GetCount() const noexcept;
 		void Reserve(std::uint64_t count);
 	};
@@ -56,7 +56,8 @@ namespace ShitHaneul {
 		std::function<Constant(std::uint64_t, const StringMap&)> BuiltinFunction;
 		ShitHaneul::InstructionList InstructionList;
 
-		std::vector<StackFrame> RecycledStackFrames;
+	private:
+		std::vector<StackFrame> m_RecycledStackFrames;
 
 	public:
 		FunctionInfo() noexcept = default;
@@ -70,6 +71,10 @@ namespace ShitHaneul {
 	public:
 		std::size_t GetStackSize() const noexcept;
 		std::size_t GetStackStartOffset() const noexcept;
+
+		bool IsRecyclable() const noexcept;
+		StackFrame Recycle() noexcept;
+		void Recycle(StackFrame&& stackFrame);
 	};
 }
 

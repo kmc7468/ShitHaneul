@@ -1,12 +1,11 @@
-﻿#include <ShitHaneul/Interpreter.hpp>
+﻿#include <ShitHaneul/Function.hpp>
+#include <ShitHaneul/Interpreter.hpp>
 #include <ShitHaneul/Parser.hpp>
 
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
-#include <iostream>
 #include <locale>
-#include <optional>
 #include <sstream>
 #include <string>
 
@@ -51,6 +50,7 @@ int main(int argc, char* argv[]) {
 			const std::string line = std::to_string(exception.Line.Line);
 			std::string topBottom(line.size() + 2, ' ');
 			topBottom += u8"|\n";
+
 			std::string code;
 			for (std::uint16_t i = 0; i < exception.Line.Line; ++i) {
 				std::getline(errorFile, code);

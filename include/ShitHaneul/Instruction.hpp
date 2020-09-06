@@ -4,7 +4,6 @@
 
 #include <cstdint>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -41,13 +40,6 @@ namespace ShitHaneul {
 		LogicAnd,
 		LogicOr,
 	};
-
-	static constexpr std::string_view Mnemonic[] = {
-		"PUSH", "POP", "LOAD_LOCAL", "STORE_LOCAL", "LOAD_DEREF", "STORE_GLOBAL", "LOAD_GLOBAL",
-		"CALL", "ADD_STRUCT", "MAKE_STRUCT", "GET_FIELD", "JMP", "POP_JMP_IF_FALSE", "FREE_VAR",
-		"ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "MOD",
-		"EQUAL", "LESS_THAN", "GREATER_THAN", "NEGATE", "LOGIC_NOT", "LOGIC_AND", "LOGIC_OR"
-	};
 }
 
 namespace ShitHaneul {
@@ -77,9 +69,6 @@ namespace ShitHaneul {
 
 	public:
 		Instruction& operator=(Instruction&& instruction) noexcept;
-
-	public:
-		std::string_view GetMnemonic() const noexcept;
 	};
 
 	class InstructionList final {

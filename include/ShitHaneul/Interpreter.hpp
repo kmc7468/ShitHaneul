@@ -36,6 +36,7 @@ namespace ShitHaneul {
 		void Push(const Constant& constant) noexcept;
 		void Pop() noexcept;
 		Constant& GetTop() noexcept;
+		Constant GetTopAndPop() noexcept;
 		Constant& GetUnderTop() noexcept;
 
 		void Store(std::uint32_t index);
