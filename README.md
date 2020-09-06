@@ -15,7 +15,7 @@ $ cmake --build .
 ```
 
 ## 성능
-누리 레포지토리에서 제공되는 예제를 [hyperfine](https://github.com/sharkdp/hyperfine)으로 준비 3회 후 10회 평균 실행 시간을 측정하였습니다.
+누리 레포지토리에서 제공되는 예제를 [hyperfine](https://github.com/sharkdp/hyperfine)으로 준비 3회 후 10회 평균 실행 시간을 측정하였습니다(2020년 9월 7일 기준).
 
 |이름|하늘|싙하늘(gcc)|싙하늘(clang)|
 |:-:|:-:|:-:|:-:|
@@ -30,6 +30,12 @@ $ cmake --build .
 |string_concat.hn|6.2ms|7.2ms|7ms|
 |struct.hn|6.5ms|7ms|6.8ms|
 |sum.hn|6.3ms|7.3ms|6.8ms|
+
+측정 환경은 다음과 같습니다.
+
+|CPU|RAM 용량|저장 장치|운영체제|
+|:-:|:-:|:-:|:-:|
+|i7-8700K|16GB|삼성 SSD 840|Windows 10 19H2 - Ubuntu WSL1|
 
 ## 라이선스
 - 싙하늘의 소스 코드는 [GPLv3](https://github.com/kmc7468/ShitHaneul/blob/master/LICENSE) 라이선스에 의해 보호받습니다.
