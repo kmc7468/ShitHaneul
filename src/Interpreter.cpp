@@ -614,8 +614,9 @@ namespace ShitHaneul {
 			}
 		});
 		RegisterBuiltinFunction(U"난수_가져오다", {}, [&](std::uint64_t, const StringMap&) -> Constant {
-			thread_local std::mt19937_64 mt(std::random_device{}());
-			return IntegerConstant(static_cast<std::uint64_t>(mt()));
+			static std::mt19937_64 mt(std::random_device{}());
+			static std::uniform_int_distribution<std::int64_t> dist(0, INT64_MAX);
+			return IntegerConstant(dist(mt));
 		});
 	}
 	Constant Interpreter::ConvertStringToList(const std::u32string& string) {
