@@ -1,5 +1,7 @@
 ﻿#include <ShitHaneul/Constant.hpp>
 
+#include <ShitHaneul/Function.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -133,7 +135,12 @@ namespace ShitHaneul {
 			result[1] = std::get<CharacterConstant>(constant).Value;
 			return result;
 		}
-		case Type::Function: return U"(함수)";
+		case Type::Function: {
+			std::u32string result = U"(함수 '";
+			result += std::get<FunctionConstant>(constant).Value->Info->Name;
+			result += U"')";
+			return result;
+		}
 		case Type::Structure: {
 			std::u32string result(1, U'{');
 
