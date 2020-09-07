@@ -15,7 +15,7 @@ $ cmake --build .
 ```
 
 ## 성능
-누리 레포지토리에서 제공되는 예제를 [hyperfine](https://github.com/sharkdp/hyperfine)으로 준비 3회 후 10회 평균 실행 시간을 측정하였습니다(2020년 9월 7일 기준).
+누리 레포지토리에서 제공되는 예제를 [hyperfine](https://github.com/sharkdp/hyperfine)으로 준비 3회 후 10회 평균 실행 시간을 측정하였습니다(싙하늘 0.1.0 기준).
 
 |이름|하늘|싙하늘(gcc)|싙하늘(clang)|
 |:-:|:-:|:-:|:-:|
