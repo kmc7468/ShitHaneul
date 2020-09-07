@@ -2,6 +2,7 @@
 
 #include <ShitHaneul/Constant.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -55,7 +56,7 @@ namespace ShitHaneul {
 	using Operand = std::variant<std::monostate,
 		std::uint32_t, std::u32string,
 		FreeVariableList, StringList,
-		std::pair<std::u32string, StringList>>;
+		std::pair<std::size_t, StringList>>;
 
 	class Instruction final {
 	public:

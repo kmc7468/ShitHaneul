@@ -117,7 +117,7 @@ namespace ShitHaneul {
 		m_StackTrace.clear();
 		m_StackTrace.emplace_back(m_ByteFile.GetRoot(), nullptr);
 		m_GlobalVariables = std::vector<Constant>(m_ByteFile.GetGlobalCount() + 1);
-		m_Structures.clear();
+		m_Structures = std::vector<StringList>(m_ByteFile.GetStructureCount() + 1);
 
 		RegisterBuiltinFunctions();
 	}
@@ -224,13 +224,13 @@ namespace ShitHaneul {
 			}
 
 			case OpCode::AddStruct: {
-				const auto& [name, fields] = std::get<std::pair<std::u32string, StringList>>(instruction.Operand);
+				const auto& [name, fields] = std::get<std::pair<std::size_t, StringList>>(instruction.Operand);
 				m_Structures[name] = fields;
 				break;
 			}
 
 			case OpCode::MakeStruct: {
-				const auto& [name, fields] = std::get<std::pair<std::u32string, StringList>>(instruction.Operand);
+				const auto& [name, fields] = std::get<std::pair<std::size_t, StringList>>(instruction.Operand);
 				const StringList& registered = m_Structures[name];
 				const std::uint8_t givenFieldCount = fields.GetCount();
 				if (registered.GetCount() != givenFieldCount) {
@@ -622,7 +622,7 @@ namespace ShitHaneul {
 	Constant Interpreter::ConvertStringToList(const std::u32string& string) {
 		if (string.empty()) return NoneConstant{};
 
-		static const StringMap nodeBase(m_Structures[U"목록"]);
+		static const StringMap nodeBase(m_Structures[m_ByteFile.GetStructureIndex(U"목록")]);
 
 		std::vector<std::unique_ptr<StringMap>> nodes;
 		StringMap* first = nullptr;

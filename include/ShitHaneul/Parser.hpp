@@ -19,6 +19,7 @@ namespace ShitHaneul {
 		std::vector<Function*> m_Functions;
 		Function* m_RootFunction = nullptr;
 
+		std::unordered_map<std::u32string, std::size_t> m_StructureMap;
 		std::vector<StringMap*> m_Structures;
 
 	public:
@@ -42,6 +43,8 @@ namespace ShitHaneul {
 		Function* GetRoot() noexcept;
 		void SetRoot(Function* function) noexcept;
 
+		std::size_t GetStructureCount() const noexcept;
+		std::size_t GetStructureIndex(const std::u32string& name);
 		void AllocateStructures(std::size_t required);
 		void AddStructure(StringMap* structure);
 		StringMap* CopyStructure(const StringMap* structure);

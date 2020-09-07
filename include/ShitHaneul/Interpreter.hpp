@@ -10,7 +10,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 namespace ShitHaneul {
@@ -67,7 +66,7 @@ namespace ShitHaneul {
 
 		std::vector<StackFrame> m_StackTrace;
 		std::vector<Constant> m_GlobalVariables;
-		std::unordered_map<std::u32string, StringList> m_Structures;
+		std::vector<StringList> m_Structures;
 
 	public:
 		Interpreter() = default;

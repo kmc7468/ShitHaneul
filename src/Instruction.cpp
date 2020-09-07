@@ -1,7 +1,5 @@
 #include <ShitHaneul/Instruction.hpp>
 
-#include <cstddef>
-
 namespace ShitHaneul {
 	Instruction::Instruction(Instruction&& instruction) noexcept
 		: OpCode(instruction.OpCode), Operand(std::move(instruction.Operand)) {}

@@ -13,7 +13,7 @@ namespace ShitHaneul {
 		: m_GlobalMap(std::move(byteFile.m_GlobalMap)),
 		m_FunctionInfos(std::move(byteFile.m_FunctionInfos)), m_Functions(std::move(byteFile.m_Functions)),
 		m_RootFunction(byteFile.m_RootFunction),
-		m_Structures(std::move(byteFile.m_Structures)) {}
+		m_StructureMap(std::move(byteFile.m_StructureMap)), m_Structures(std::move(byteFile.m_Structures)) {}
 	ByteFile::~ByteFile() {
 		Clear();
 	}
@@ -25,12 +25,14 @@ namespace ShitHaneul {
 		m_Functions = std::move(byteFile.m_Functions);
 		m_RootFunction = byteFile.m_RootFunction;
 
+		m_StructureMap = std::move(byteFile.m_StructureMap);
 		m_Structures = std::move(byteFile.m_Structures);
 		return *this;
 	}
 
 	void ByteFile::Clear() noexcept {
 		m_GlobalMap.clear();
+		m_StructureMap.clear();
 
 		static constexpr auto deleter = [](auto pointer) {
 			delete pointer;
@@ -77,6 +79,16 @@ namespace ShitHaneul {
 		m_RootFunction = function;
 	}
 
+	std::size_t ByteFile::GetStructureCount() const noexcept {
+		return m_StructureMap.size();
+	}
+	std::size_t ByteFile::GetStructureIndex(const std::u32string& name) {
+		std::size_t& index = m_StructureMap[name];
+		if (!index) {
+			index = m_StructureMap.size();
+		}
+		return index;
+	}
 	void ByteFile::AllocateStructures(std::size_t required) {
 		m_Structures.reserve(m_Structures.size() + required);
 	}
@@ -257,8 +269,8 @@ namespace ShitHaneul {
 
 		case OpCode::AddStruct:
 		case OpCode::MakeStruct: {
-			auto name = ReadString<std::uint8_t>();
-			result.Operand = std::make_pair(std::move(name), ParseStringList());
+			const auto name = ReadString<std::uint8_t>();
+			result.Operand = std::make_pair(m_Result.GetStructureIndex(name), ParseStringList());
 			break;
 		}
 
