@@ -10,29 +10,31 @@
 
 namespace ShitHaneul {
 	ByteFile::ByteFile(ByteFile&& byteFile) noexcept
-		: m_GlobalMap(std::move(byteFile.m_GlobalMap)),
+		: m_GlobalNameMap(std::move(byteFile.m_GlobalNameMap)),
 		m_FunctionInfos(std::move(byteFile.m_FunctionInfos)), m_Functions(std::move(byteFile.m_Functions)),
 		m_RootFunction(byteFile.m_RootFunction),
-		m_StructureMap(std::move(byteFile.m_StructureMap)), m_Structures(std::move(byteFile.m_Structures)) {}
+		m_StructureNameMap(std::move(byteFile.m_StructureNameMap)), m_StructureInfos(std::move(byteFile.m_StructureInfos)),
+		m_Structures(std::move(byteFile.m_Structures)) {}
 	ByteFile::~ByteFile() {
 		Clear();
 	}
 
 	ByteFile& ByteFile::operator=(ByteFile&& byteFile) noexcept {
-		m_GlobalMap = std::move(byteFile.m_GlobalMap);
+		m_GlobalNameMap = std::move(byteFile.m_GlobalNameMap);
 
 		m_FunctionInfos = std::move(byteFile.m_FunctionInfos);
 		m_Functions = std::move(byteFile.m_Functions);
 		m_RootFunction = byteFile.m_RootFunction;
 
-		m_StructureMap = std::move(byteFile.m_StructureMap);
+		m_StructureNameMap = std::move(byteFile.m_StructureNameMap);
+		m_StructureInfos = std::move(byteFile.m_StructureInfos);
 		m_Structures = std::move(byteFile.m_Structures);
 		return *this;
 	}
 
 	void ByteFile::Clear() noexcept {
-		m_GlobalMap.clear();
-		m_StructureMap.clear();
+		m_GlobalNameMap.clear();
+		m_StructureNameMap.clear();
 
 		static constexpr auto deleter = [](auto pointer) {
 			delete pointer;
@@ -43,13 +45,13 @@ namespace ShitHaneul {
 		std::for_each(m_Structures.begin(), m_Structures.end(), deleter);
 	}
 
-	std::size_t ByteFile::GetGlobalCount() const noexcept {
-		return m_GlobalMap.size();
+	std::size_t ByteFile::GetGlobalNameCount() const noexcept {
+		return m_GlobalNameMap.size();
 	}
-	std::size_t ByteFile::GetGlobalIndex(const std::u32string& name, bool createNewIndex) {
-		std::size_t& index = m_GlobalMap[name];
+	std::size_t ByteFile::GetGlobalNameIndex(const std::u32string& name, bool createNewIndex) {
+		std::size_t& index = m_GlobalNameMap[name];
 		if (createNewIndex && !index) {
-			index = m_GlobalMap.size();
+			index = m_GlobalNameMap.size();
 		}
 		return index;
 	}
@@ -79,26 +81,35 @@ namespace ShitHaneul {
 		m_RootFunction = function;
 	}
 
-	std::size_t ByteFile::GetStructureCount() const noexcept {
-		return m_StructureMap.size();
+	std::size_t ByteFile::GetStructureNameCount() const noexcept {
+		return m_StructureNameMap.size();
 	}
-	std::size_t ByteFile::GetStructureIndex(const std::u32string& name) {
-		std::size_t& index = m_StructureMap[name];
+	std::size_t ByteFile::GetStructureNameIndex(const std::u32string& name) {
+		std::size_t& index = m_StructureNameMap[name];
 		if (!index) {
-			index = m_StructureMap.size();
+			index = m_StructureNameMap.size();
 		}
 		return index;
+	}
+	void ByteFile::RegisterStructure(std::size_t index, const StringList& structureInfo) {
+		m_StructureInfos[index] = structureInfo;
 	}
 	void ByteFile::AllocateStructures(std::size_t required) {
 		m_Structures.reserve(m_Structures.size() + required);
 	}
+	void ByteFile::AllocateStructureInfos() {
+		m_StructureInfos.resize(GetStructureNameCount() + 1);
+	}
 	void ByteFile::AddStructure(StringMap* structure) {
 		m_Structures.push_back(structure);
 	}
-	StringMap* ByteFile::CopyStructure(const StringMap* structure) {
-		std::unique_ptr<StringMap> result(new StringMap(*structure));
+	StringMap* ByteFile::CreateStructure(std::size_t index) {
+		std::unique_ptr<StringMap> result(new StringMap(m_StructureInfos[index]));
 		AddStructure(result.get());
 		return result.release();
+	}
+	const StringList& ByteFile::GetStructureInfo(std::size_t index) {
+		return m_StructureInfos[index];
 	}
 }
 
@@ -176,7 +187,7 @@ namespace ShitHaneul {
 		const auto count = ReadScalar<std::uint64_t>();
 		result.reserve(static_cast<std::size_t>(count));
 		for (std::uint64_t i = 0; i < count; ++i) {
-			result.push_back(m_Result.GetGlobalIndex(ReadString()));
+			result.push_back(m_Result.GetGlobalNameIndex(ReadString()));
 		}
 		return result;
 	}
@@ -270,7 +281,7 @@ namespace ShitHaneul {
 		case OpCode::AddStruct:
 		case OpCode::MakeStruct: {
 			const auto name = ReadString<std::uint8_t>();
-			result.Operand = std::make_pair(m_Result.GetStructureIndex(name), ParseStringList());
+			result.Operand = std::make_pair(m_Result.GetStructureNameIndex(name), ParseStringList());
 			break;
 		}
 

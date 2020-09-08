@@ -66,7 +66,6 @@ namespace ShitHaneul {
 
 		std::vector<StackFrame> m_StackTrace;
 		std::vector<Constant> m_GlobalVariables;
-		std::vector<StringList> m_Structures;
 
 	public:
 		Interpreter() = default;

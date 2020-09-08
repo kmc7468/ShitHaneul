@@ -116,8 +116,8 @@ namespace ShitHaneul {
 
 		m_StackTrace.clear();
 		m_StackTrace.emplace_back(m_ByteFile.GetRoot(), nullptr);
-		m_GlobalVariables = std::vector<Constant>(m_ByteFile.GetGlobalCount() + 1);
-		m_Structures = std::vector<StringList>(m_ByteFile.GetStructureCount() + 1);
+		m_GlobalVariables = std::vector<Constant>(m_ByteFile.GetGlobalNameCount() + 1);
+		m_ByteFile.AllocateStructureInfos();
 
 		RegisterBuiltinFunctions();
 	}
@@ -224,21 +224,20 @@ namespace ShitHaneul {
 			}
 
 			case OpCode::AddStruct: {
-				const auto& [name, fields] = std::get<std::pair<std::size_t, StringList>>(instruction.Operand);
-				m_Structures[name] = fields;
+				const auto& [index, fields] = std::get<std::pair<std::size_t, StringList>>(instruction.Operand);
+				m_ByteFile.RegisterStructure(index, fields);
 				break;
 			}
 
 			case OpCode::MakeStruct: {
-				const auto& [name, fields] = std::get<std::pair<std::size_t, StringList>>(instruction.Operand);
-				const StringList& registered = m_Structures[name];
+				const auto& [index, fields] = std::get<std::pair<std::size_t, StringList>>(instruction.Operand);
+				StringMap* const structure = m_ByteFile.CreateStructure(index);
 				const std::uint8_t givenFieldCount = fields.GetCount();
-				if (registered.GetCount() != givenFieldCount) {
-					RaiseException(offset, FieldMismatchException(registered.GetCount(), givenFieldCount));
+				if (structure->GetCount() != givenFieldCount) {
+					RaiseException(offset, FieldMismatchException(structure->GetCount(), givenFieldCount));
 					return false;
 				}
 
-				std::unique_ptr<StringMap> structure(new StringMap(registered));
 				for (std::uint8_t i = 0; i < givenFieldCount; ++i) {
 					if (structure->BindConstant(fields[i], frame.GetTopAndPop()) != BoundResult::Success) {
 						RaiseException(offset, UndefinedException(u8"필드", EncodeUTF32ToUTF8(fields[i])));
@@ -246,9 +245,7 @@ namespace ShitHaneul {
 					}
 				}
 
-				frame.Push(StructureConstant(structure.get()));
-				m_ByteFile.AddStructure(structure.get());
-				structure.release();
+				frame.Push(StructureConstant(structure));
 				break;
 			}
 
@@ -551,9 +548,9 @@ namespace ShitHaneul {
 
 	void Interpreter::RegisterBuiltinFunction(const std::u32string& name, StringList&& josaList,
 		std::function<Constant(std::uint64_t, const StringMap&)>&& builtinFunction) {
-		if (const std::size_t index = m_ByteFile.GetGlobalIndex(name, false); index) {
+		if (const std::size_t index = m_ByteFile.GetGlobalNameIndex(name, false); index) {
 			std::unique_ptr<FunctionInfo> function(new FunctionInfo(std::move(josaList), std::move(builtinFunction)));
-			m_GlobalVariables[m_ByteFile.GetGlobalIndex(name)] = FunctionConstant(m_ByteFile.RegisterFunction(function.get()));
+			m_GlobalVariables[m_ByteFile.GetGlobalNameIndex(name)] = FunctionConstant(m_ByteFile.RegisterFunction(function.get()));
 			function.release();
 		}
 	}
@@ -622,7 +619,7 @@ namespace ShitHaneul {
 	Constant Interpreter::ConvertStringToList(const std::u32string& string) {
 		if (string.empty()) return NoneConstant{};
 
-		static const StringMap nodeBase(m_Structures[m_ByteFile.GetStructureIndex(U"목록")]);
+		static const StringMap nodeBase(m_ByteFile.GetStructureInfo(m_ByteFile.GetStructureNameIndex(U"목록")));
 
 		std::vector<std::unique_ptr<StringMap>> nodes;
 		StringMap* first = nullptr;
