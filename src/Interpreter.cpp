@@ -1,6 +1,5 @@
 ﻿#include <ShitHaneul/Interpreter.hpp>
 
-#include <ShitHaneul/Instruction.hpp>
 #include <ShitHaneul/Memory.hpp>
 
 #include <iostream>

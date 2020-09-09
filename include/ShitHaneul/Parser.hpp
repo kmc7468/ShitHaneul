@@ -2,7 +2,6 @@
 
 #include <ShitHaneul/Constant.hpp>
 #include <ShitHaneul/Function.hpp>
-#include <ShitHaneul/Instruction.hpp>
 
 #include <cstddef>
 #include <cstdint>
