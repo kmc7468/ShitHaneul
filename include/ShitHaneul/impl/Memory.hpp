@@ -21,3 +21,14 @@ namespace ShitHaneul {
 		return reinterpret_cast<T&>(temp);
 	}
 }
+
+namespace ShitHaneul {
+	template<typename... Args>
+	Function* Page::CreateFunction(Args&&... args) noexcept(std::is_nothrow_constructible_v<Function, Args...>) {
+		return &std::get<Function>(m_Page[m_Used++] = Function(std::forward<Args>(args)...));
+	}
+	template<typename... Args>
+	StringMap* Page::CreateStructure(Args && ...args) noexcept(std::is_nothrow_constructible_v<StringMap, Args...>) {
+		return &std::get<StringMap>(m_Page[m_Used++] = StringMap(std::forward<Args>(args)...));
+	}
+}
