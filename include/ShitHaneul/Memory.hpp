@@ -4,7 +4,9 @@
 #include <ShitHaneul/Function.hpp>
 
 #include <cstddef>
+#include <list>
 #include <type_traits>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -44,7 +46,7 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	using ManagedConstant = std::variant<std::monostate, Function, StringMap>;
+	using ManagedConstant = std::pair<std::variant<std::monostate, Function, StringMap>, int>;
 
 	class Page final {
 	private:
@@ -62,9 +64,43 @@ namespace ShitHaneul {
 		ManagedConstant& operator[](std::size_t index) noexcept;
 
 	public:
+		bool IsEmpty() const noexcept;
+		bool IsFull() const noexcept;
 		std::size_t GetSize() const noexcept;
 		std::size_t GetUsedSize() const noexcept;
 		std::size_t GetUnusedSize() const noexcept;
+
+		template<typename... Args>
+		Function* CreateFunction(Args&&... args) noexcept(std::is_nothrow_constructible_v<Function, Args...>);
+		template<typename... Args>
+		StringMap* CreateStructure(Args&&... args) noexcept(std::is_nothrow_constructible_v<StringMap, Args...>);
+	};
+}
+
+namespace ShitHaneul {
+	class Generation final {
+	public:
+		using PageIterator = std::list<Page>::iterator;
+
+	private:
+		std::list<Page> m_Pages;
+		PageIterator m_CurrentPage;
+		std::size_t m_PageSize;
+
+	public:
+		explicit Generation(std::size_t pageSize);
+		Generation(Generation&& generation) noexcept;
+		~Generation() = default;
+
+	public:
+		Generation& operator=(Generation&& generation) noexcept;
+
+	public:
+		void Reset() noexcept;
+		void Initialize(std::size_t pageSize);
+
+		PageIterator CreatePage();
+		PageIterator GetCurrentPage() noexcept;
 
 		template<typename... Args>
 		Function* CreateFunction(Args&&... args) noexcept(std::is_nothrow_constructible_v<Function, Args...>);
