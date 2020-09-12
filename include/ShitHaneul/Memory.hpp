@@ -3,9 +3,12 @@
 #include <ShitHaneul/Constant.hpp>
 #include <ShitHaneul/Function.hpp>
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <list>
+#include <memory>
+#include <thread>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -56,6 +59,7 @@ namespace ShitHaneul {
 	struct ManagedConstant final {
 		std::variant<std::monostate, Function, StringMap> Value;
 		std::uint64_t Age = 0;
+		int Survived = 0;
 		MarkedColor Color = MarkedColor::White;
 	};
 }
@@ -98,6 +102,7 @@ namespace ShitHaneul {
 		std::size_t m_PageSize;
 
 	public:
+		Generation() = default;
 		explicit Generation(std::size_t pageSize);
 		Generation(Generation&& generation) noexcept;
 		~Generation() = default;
@@ -106,6 +111,7 @@ namespace ShitHaneul {
 		Generation& operator=(Generation&& generation) noexcept;
 
 	public:
+		bool IsEmpty() const noexcept;
 		void Reset() noexcept;
 		void Initialize(std::size_t pageSize);
 
@@ -117,12 +123,23 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	class ByteFile;
+	class Interpreter;
 
 	class GarbageCollector final {
 	private:
-		Generation m_YoungGeneration;
-		Generation m_OldGeneration;
+		enum class Status {
+			Idle,
+			Working,
+			Done,
+		};
+
+	private:
+		Generation m_FrontYoungGeneration, m_BackYoungGeneration;
+		Generation m_FrontOldGeneration, m_BackOldGeneration;
+		std::atomic<Status> m_Status = Status::Idle;
+		bool m_ShouldSwapYoungGeneration = false;
+		bool m_ShouldSwapOldGeneration = false;
+		std::unique_ptr<std::thread> m_GCThread = nullptr;
 
 	public:
 		GarbageCollector(std::size_t youngPageSize, std::size_t oldPageSize);
@@ -135,6 +152,17 @@ namespace ShitHaneul {
 	public:
 		void Reset() noexcept;
 		void Initialize(std::size_t youngPageSize, std::size_t oldPageSize);
+
+		ManagedConstant* Allocate(Interpreter& interpreter);
+
+	private:
+		ManagedConstant* Allocate(Interpreter& interpreter, bool shouldDoMajorGC);
+		void SwapFrontAndBack(bool shouldSwapYoungGeneration, bool shouldSwapOldGeneration) noexcept;
+		void StartGC(void(GarbageCollector::* pointer)(Interpreter&), bool shouldCreateNewThread, Interpreter& interpreter);
+		ManagedConstant* CreatePageAndAllocate(Interpreter& interpreter, bool shouldDoMajorGC);
+
+		void MinorGC(Interpreter& interpreter);
+		void MajorGC(Interpreter& interpreter);
 	};
 }
 
