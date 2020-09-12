@@ -45,6 +45,10 @@ namespace ShitHaneul {
 	std::size_t Page::GetUnusedSize() const noexcept {
 		return GetSize() - GetUsedSize();
 	}
+
+	ManagedConstant* Page::Allocate() noexcept {
+		return &m_Page[m_Used++];
+	}
 }
 
 namespace ShitHaneul {
@@ -71,9 +75,37 @@ namespace ShitHaneul {
 	}
 
 	Generation::PageIterator Generation::CreatePage() {
-		return m_Pages.insert(std::next(m_CurrentPage), Page(m_PageSize));
+		const PageIterator result = m_Pages.insert(std::next(m_CurrentPage), Page(m_PageSize));
+		return ++m_CurrentPage, result;
 	}
 	Generation::PageIterator Generation::GetCurrentPage() noexcept {
 		return m_CurrentPage;
+	}
+
+	ManagedConstant* Generation::Allocate() noexcept {
+		if (m_CurrentPage->IsFull()) return nullptr;
+		else return m_CurrentPage->Allocate();
+	}
+}
+
+namespace ShitHaneul {
+	GarbageCollector::GarbageCollector(std::size_t youngPageSize, std::size_t oldPageSize)
+		: m_YoungGeneration(youngPageSize), m_OldGeneration(oldPageSize) {}
+	GarbageCollector::GarbageCollector(GarbageCollector&& garbageCollector) noexcept
+		: m_YoungGeneration(std::move(garbageCollector.m_YoungGeneration)), m_OldGeneration(std::move(garbageCollector.m_OldGeneration)) {}
+
+	GarbageCollector& GarbageCollector::operator=(GarbageCollector&& garbageCollector) noexcept {
+		m_YoungGeneration = std::move(garbageCollector.m_YoungGeneration);
+		m_OldGeneration = std::move(garbageCollector.m_OldGeneration);
+		return *this;
+	}
+
+	void GarbageCollector::Reset() noexcept {
+		m_YoungGeneration.Reset();
+		m_OldGeneration.Reset();
+	}
+	void GarbageCollector::Initialize(std::size_t youngPageSize, std::size_t oldPageSize) {
+		m_YoungGeneration.Initialize(youngPageSize);
+		m_OldGeneration.Initialize(oldPageSize);
 	}
 }

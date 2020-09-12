@@ -4,6 +4,7 @@
 #include <ShitHaneul/Function.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <list>
 #include <type_traits>
 #include <utility>
@@ -46,8 +47,20 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	using ManagedConstant = std::pair<std::variant<std::monostate, Function, StringMap>, int>;
+	enum class MarkedColor {
+		White,
+		Gray,
+		Black,
+	};
 
+	struct ManagedConstant final {
+		std::variant<std::monostate, Function, StringMap> Value;
+		std::uint64_t Age = 0;
+		MarkedColor Color = MarkedColor::White;
+	};
+}
+
+namespace ShitHaneul {
 	class Page final {
 	private:
 		std::vector<ManagedConstant> m_Page;
@@ -70,10 +83,7 @@ namespace ShitHaneul {
 		std::size_t GetUsedSize() const noexcept;
 		std::size_t GetUnusedSize() const noexcept;
 
-		template<typename... Args>
-		Function* CreateFunction(Args&&... args) noexcept(std::is_nothrow_constructible_v<Function, Args...>);
-		template<typename... Args>
-		StringMap* CreateStructure(Args&&... args) noexcept(std::is_nothrow_constructible_v<StringMap, Args...>);
+		ManagedConstant* Allocate() noexcept;
 	};
 }
 
@@ -102,10 +112,29 @@ namespace ShitHaneul {
 		PageIterator CreatePage();
 		PageIterator GetCurrentPage() noexcept;
 
-		template<typename... Args>
-		Function* CreateFunction(Args&&... args) noexcept(std::is_nothrow_constructible_v<Function, Args...>);
-		template<typename... Args>
-		StringMap* CreateStructure(Args&&... args) noexcept(std::is_nothrow_constructible_v<StringMap, Args...>);
+		ManagedConstant* Allocate() noexcept;
+	};
+}
+
+namespace ShitHaneul {
+	class ByteFile;
+
+	class GarbageCollector final {
+	private:
+		Generation m_YoungGeneration;
+		Generation m_OldGeneration;
+
+	public:
+		GarbageCollector(std::size_t youngPageSize, std::size_t oldPageSize);
+		GarbageCollector(GarbageCollector&& garbageCollector) noexcept;
+		~GarbageCollector() = default;
+
+	public:
+		GarbageCollector& operator=(GarbageCollector&& garbageCollector) noexcept;
+
+	public:
+		void Reset() noexcept;
+		void Initialize(std::size_t youngPageSize, std::size_t oldPageSize);
 	};
 }
 
