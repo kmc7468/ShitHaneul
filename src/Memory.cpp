@@ -57,7 +57,9 @@ namespace ShitHaneul {
 
 namespace ShitHaneul {
 	Generation::Generation(std::size_t pageSize) {
-		Initialize(pageSize);
+		m_Pages.emplace_back(pageSize);
+		m_CurrentPage = m_Pages.begin();
+		m_PageSize = pageSize;
 	}
 	Generation::Generation(Generation&& generation) noexcept
 		: m_Pages(std::move(generation.m_Pages)), m_CurrentPage(generation.m_CurrentPage), m_PageSize(generation.m_PageSize) {}
@@ -67,18 +69,6 @@ namespace ShitHaneul {
 		m_CurrentPage = generation.m_CurrentPage;
 		m_PageSize = generation.m_PageSize;
 		return *this;
-	}
-
-	bool Generation::IsEmpty() const noexcept {
-		return m_Pages.size() == 0;
-	}
-	void Generation::Reset() noexcept {
-		m_Pages.clear();
-	}
-	void Generation::Initialize(std::size_t pageSize) {
-		m_Pages.emplace_back(pageSize);
-		m_CurrentPage = m_Pages.begin();
-		m_PageSize = pageSize;
 	}
 
 	Generation::PageIterator Generation::CreatePage() {
@@ -96,104 +86,84 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	GarbageCollector::GarbageCollector(std::size_t youngPageSize, std::size_t oldPageSize)
-		: m_FrontYoungGeneration(youngPageSize), m_FrontOldGeneration(oldPageSize) {}
-	GarbageCollector::GarbageCollector(GarbageCollector&& garbageCollector) noexcept
-		: m_FrontYoungGeneration(std::move(garbageCollector.m_FrontYoungGeneration)), m_BackYoungGeneration(std::move(garbageCollector.m_BackYoungGeneration)),
-		m_FrontOldGeneration(std::move(garbageCollector.m_FrontOldGeneration)), m_BackOldGeneration(std::move(garbageCollector.m_BackOldGeneration)) {
-		assert(m_Status == Status::Idle && garbageCollector.m_Status == Status::Idle);
+	GarbageCollector::GarbageCollector(Interpreter& interpreter, std::size_t youngPageSize, std::size_t oldPageSize)
+		: m_Interpreter(interpreter), m_FrontYoungGeneration(youngPageSize), m_BackYoungGeneration(youngPageSize),
+		m_OldGeneration(oldPageSize) {}
+
+	void GarbageCollector::Wait() {
+		if (m_GCThread->joinable()) {
+			m_GCThread->join();
+		}
 	}
 
-	GarbageCollector& GarbageCollector::operator=(GarbageCollector&& garbageCollector) noexcept {
-		assert(m_Status == Status::Idle && garbageCollector.m_Status == Status::Idle);
-
-		m_FrontYoungGeneration = std::move(garbageCollector.m_FrontYoungGeneration);
-		m_BackYoungGeneration = std::move(garbageCollector.m_BackYoungGeneration);
-		m_FrontOldGeneration = std::move(garbageCollector.m_FrontOldGeneration);
-		m_BackOldGeneration = std::move(garbageCollector.m_BackOldGeneration);
-		return *this;
+	ManagedConstant* GarbageCollector::Allocate() {
+		ManagedConstant* const result = Reserve();
+		return Allocate(result), result;
+	}
+	void GarbageCollector::Allocate(ManagedConstant* reserved) noexcept {
+		reserved->Age = ++m_ObjectCount;
+	}
+	ManagedConstant* GarbageCollector::Reserve() {
+		return Reserve(false);
 	}
 
-	void GarbageCollector::Reset() noexcept {
-		m_FrontYoungGeneration.Reset();
-		m_BackYoungGeneration.Reset();
-		m_FrontOldGeneration.Reset();
-		m_BackOldGeneration.Reset();
-	}
-	void GarbageCollector::Initialize(std::size_t youngPageSize, std::size_t oldPageSize) {
-		m_FrontYoungGeneration.Initialize(youngPageSize);
-		m_FrontOldGeneration.Initialize(oldPageSize);
-	}
-
-	ManagedConstant* GarbageCollector::Allocate(Interpreter& interpreter) {
-		return Allocate(interpreter, false);
-	}
-
-	ManagedConstant* GarbageCollector::Allocate(Interpreter& interpreter, bool shouldDoMajorGC) {
+	ManagedConstant* GarbageCollector::Reserve(bool shouldDoMajorGC) {
 		ManagedConstant* result = m_FrontYoungGeneration.Allocate();
 		if (!result) {
 			if (m_Status == Status::Idle) {
-				SwapFrontAndBack(true, false);
-				StartGC(&GarbageCollector::MinorGC, true, interpreter);
+				std::swap(m_FrontYoungGeneration, m_BackYoungGeneration);
+				StartGC(&GarbageCollector::MinorGC, true);
 				if (!(result = m_FrontYoungGeneration.Allocate())) {
-					result = CreatePageAndAllocate(interpreter, false);
+					result = CreatePageAndAllocate(false);
 				}
 			} else if (m_Status == Status::Done) {
 				if (m_GCThread->joinable()) {
 					m_GCThread->join();
 				}
-				SwapFrontAndBack(m_ShouldSwapYoungGeneration, m_ShouldSwapOldGeneration);
+				std::swap(m_FrontYoungGeneration, m_BackYoungGeneration);
 				if (!shouldDoMajorGC) {
-					StartGC(&GarbageCollector::MinorGC, true, interpreter);
+					StartGC(&GarbageCollector::MinorGC, true);
 				} else {
 					m_Status = Status::Idle;
 				}
 				if (!(result = m_FrontYoungGeneration.Allocate())) {
-					result = CreatePageAndAllocate(interpreter, shouldDoMajorGC);
+					result = CreatePageAndAllocate(shouldDoMajorGC);
 				}
 			} else {
-				result = CreatePageAndAllocate(interpreter, shouldDoMajorGC);
+				result = CreatePageAndAllocate(shouldDoMajorGC);
 			}
 		}
 		return result;
 	}
-	void GarbageCollector::SwapFrontAndBack(bool shouldSwapYoungGeneration, bool shouldSwapOldGeneration) noexcept {
-		if (shouldSwapYoungGeneration) {
-			std::swap(m_FrontYoungGeneration, m_BackYoungGeneration);
-		}
-		if (shouldSwapOldGeneration) {
-			std::swap(m_FrontOldGeneration, m_BackOldGeneration);
-		}
-	}
-	void GarbageCollector::StartGC(void(GarbageCollector::*pointer)(Interpreter&), bool shouldCreateNewThread, Interpreter& interpreter) {
+	void GarbageCollector::StartGC(void(GarbageCollector::*pointer)(), bool shouldCreateNewThread) {
 		m_Status = Status::Working;
 		if (shouldCreateNewThread) {
-			m_GCThread = std::make_unique<std::thread>(pointer, this, std::ref(interpreter));
+			m_GCThread = std::make_unique<std::thread>(pointer, this);
 		} else {
-			(this->*pointer)(interpreter);
+			(this->*pointer)();
 		}
 	}
-	ManagedConstant* GarbageCollector::CreatePageAndAllocate(Interpreter& interpreter, bool shouldDoMajorGC) {
+	ManagedConstant* GarbageCollector::CreatePageAndAllocate(bool shouldDoMajorGC) {
 		try {
 			m_FrontYoungGeneration.CreatePage();
 			return m_FrontYoungGeneration.Allocate();
 		} catch (...) {
 			if (shouldDoMajorGC) {
-				MajorGC(interpreter);
-				return CreatePageAndAllocate(interpreter, false);
+				MajorGC();
+				return CreatePageAndAllocate(false);
 			} else {
 				if (m_GCThread->joinable()) {
 					m_GCThread->join();
-					return Allocate(interpreter, true);
+					return Reserve(true);
 				} else return nullptr;
 			}
 		}
 	}
 
-	void GarbageCollector::MinorGC(Interpreter& interpreter) {
+	void GarbageCollector::MinorGC() {
 		// TODO
 	}
-	void GarbageCollector::MajorGC(Interpreter& interpreter) {
+	void GarbageCollector::MajorGC() {
 		// TODO
 	}
 }
