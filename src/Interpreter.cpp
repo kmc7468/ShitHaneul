@@ -3,6 +3,7 @@
 #include <ShitHaneul/Instruction.hpp>
 #include <ShitHaneul/Memory.hpp>
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <random>
@@ -417,7 +418,7 @@ namespace ShitHaneul {
 					RaiseException(offset, DivideByZeroException());
 					return false;
 				}
-				frame.Push(IntegerConstant(std::get<IntegerConstant>(underTop).Value % std::get<IntegerConstant>(top).Value));
+				frame.Push(IntegerConstant(std::max<std::int64_t>(0, std::get<IntegerConstant>(underTop).Value % std::get<IntegerConstant>(top).Value)));
 				break;
 			}
 
