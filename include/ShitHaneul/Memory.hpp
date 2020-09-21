@@ -134,9 +134,10 @@ namespace ShitHaneul {
 	public:
 		void Wait();
 
-		ManagedConstant* Allocate();
-		void Allocate(ManagedConstant* reserved) noexcept;
-		ManagedConstant* Reserve();
+		template<typename T, typename... Args>
+		T* Allocate(Args&&... args);
+		void Allocate(Function* reserved) noexcept;
+		Function* Reserve();
 
 	private:
 		ManagedConstant* Reserve(bool shouldDoMajorGC);

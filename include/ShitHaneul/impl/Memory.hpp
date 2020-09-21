@@ -20,3 +20,15 @@ namespace ShitHaneul {
 		return reinterpret_cast<T&>(temp);
 	}
 }
+
+namespace ShitHaneul {
+	template<typename T, typename... Args>
+	T* GarbageCollector::Allocate(Args&&...args) {
+		ManagedConstant* const reserved = Reserve(false);
+		*reserved = T(std::forward<Args>(args)...);
+
+		T* const result = &std::get<T>(*reserved);
+		result->Age = ++m_ObjectCount;
+		return result;
+	}
+}

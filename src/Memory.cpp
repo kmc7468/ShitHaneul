@@ -51,7 +51,8 @@ namespace ShitHaneul {
 	}
 
 	ManagedConstant* Page::Allocate() noexcept {
-		return &m_Page[m_Used++];
+		if (IsFull()) return nullptr;
+		else return &m_Page[m_Used++];
 	}
 }
 
@@ -80,8 +81,7 @@ namespace ShitHaneul {
 	}
 
 	ManagedConstant* Generation::Allocate() noexcept {
-		if (m_CurrentPage->IsFull()) return nullptr;
-		else return m_CurrentPage->Allocate();
+		return m_CurrentPage->Allocate();
 	}
 }
 
@@ -96,15 +96,13 @@ namespace ShitHaneul {
 		}
 	}
 
-	ManagedConstant* GarbageCollector::Allocate() {
-		ManagedConstant* const result = Reserve();
-		return Allocate(result), result;
-	}
-	void GarbageCollector::Allocate(ManagedConstant* reserved) noexcept {
+	void GarbageCollector::Allocate(Function* reserved) noexcept {
 		reserved->Age = ++m_ObjectCount;
 	}
-	ManagedConstant* GarbageCollector::Reserve() {
-		return Reserve(false);
+	Function* GarbageCollector::Reserve() {
+		ManagedConstant* const reserved = Reserve(false);
+		*reserved = Function();
+		return &std::get<Function>(*reserved);
 	}
 
 	ManagedConstant* GarbageCollector::Reserve(bool shouldDoMajorGC) {
