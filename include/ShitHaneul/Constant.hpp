@@ -27,7 +27,7 @@ namespace ShitHaneul {
 
 namespace ShitHaneul {
 	class Function;
-	class StringMap;
+	class Structure;
 
 	class NoneConstant final {
 	public:
@@ -113,11 +113,11 @@ namespace ShitHaneul {
 
 	class StructureConstant final {
 	public:
-		StringMap* Value = nullptr;
+		Structure* Value = nullptr;
 
 	public:
 		StructureConstant() noexcept = default;
-		StructureConstant(StringMap* value) noexcept;
+		StructureConstant(Structure* value) noexcept;
 		StructureConstant(const StructureConstant& constant) noexcept;
 		~StructureConstant() = default;
 
@@ -147,7 +147,7 @@ namespace ShitHaneul {
 		std::is_same_v<T, char32_t>, CharacterConstant, std::conditional_t<
 		std::is_same_v<T, bool>, BooleanConstant, std::conditional_t<
 		std::is_same_v<T, Function*>, FunctionConstant, std::conditional_t<
-		std::is_same_v<T, StringMap*>, StructureConstant,
+		std::is_same_v<T, Structure*>, StructureConstant,
 		void
 	>>>>>>;
 
@@ -232,6 +232,30 @@ namespace ShitHaneul {
 		std::uint8_t GetUnboundCount() const noexcept;
 		BoundResult BindConstant(const Constant& constant);
 		BoundResult BindConstant(const std::u32string_view& string, const Constant& constant);
+	};
+}
+
+namespace ShitHaneul {
+	struct ManagedConstantHeader {
+		std::uint64_t Age = 0;
+		int Survived = 0;
+		bool IsMarked = false;
+	};
+}
+
+namespace ShitHaneul {
+	class Structure final {
+	public:
+		ManagedConstantHeader Header;
+		StringMap Fields;
+
+	public:
+		Structure() noexcept = default;
+		Structure(Structure&& structure) noexcept;
+		~Structure() = default;
+
+	public:
+		Structure& operator=(Structure&& structure) noexcept;
 	};
 }
 

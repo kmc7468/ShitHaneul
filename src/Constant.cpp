@@ -78,7 +78,7 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	StructureConstant::StructureConstant(StringMap* value) noexcept
+	StructureConstant::StructureConstant(Structure* value) noexcept
 		: Value(value) {}
 	StructureConstant::StructureConstant(const StructureConstant& constant) noexcept
 		: Value(constant.Value) {}
@@ -113,7 +113,7 @@ namespace ShitHaneul {
 			if (rhsType == Type::Character) return std::get<CharacterConstant>(lhs).Value == std::get<CharacterConstant>(rhs).Value;
 			else return false;
 		case Type::Function: return false;
-		case Type::Structure: return lhsType == rhsType && *std::get<StructureConstant>(lhs).Value == *std::get<StructureConstant>(rhs).Value;
+		case Type::Structure: return lhsType == rhsType && std::get<StructureConstant>(lhs).Value->Fields == std::get<StructureConstant>(rhs).Value->Fields;
 		default: return false;
 		}
 	}
@@ -145,13 +145,13 @@ namespace ShitHaneul {
 			std::u32string result(1, U'{');
 
 			const auto structure = std::get<StructureConstant>(constant);
-			const std::uint8_t count = structure.Value->GetCount();
+			const std::uint8_t count = structure.Value->Fields.GetCount();
 			for (std::uint8_t i = 0; i < count; ++i) {
 				if (i) {
 					result += U", ";
 				}
 
-				const auto [name, value] = (*structure.Value)[i];
+				const auto [name, value] = structure.Value->Fields[i];
 				result += name;
 				result += U": ";
 				result += ToString(value);
@@ -303,5 +303,16 @@ namespace ShitHaneul {
 			++m_BoundCount;
 			return BoundResult::Success;
 		}
+	}
+}
+
+namespace ShitHaneul {
+	Structure::Structure(Structure&& structure) noexcept
+		: Header(structure.Header), Fields(std::move(structure.Fields)) {}
+
+	Structure& Structure::operator=(Structure&& structure) noexcept {
+		Header = structure.Header;
+		Fields = std::move(structure.Fields);
+		return *this;
 	}
 }
