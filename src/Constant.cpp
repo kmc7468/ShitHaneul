@@ -307,17 +307,17 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	ManagedConstantHeader::ManagedConstantHeader(ShitHaneul::Type type) noexcept
+	ManagedConstantRoot::ManagedConstantRoot(ShitHaneul::Type type) noexcept
 		: Type(type) {}
 }
 
 namespace ShitHaneul {
 	Structure::Structure() noexcept
-		: ManagedConstantHeader(Type::Structure) {}
+		: ManagedConstantRoot(Type::Structure) {}
 	Structure::Structure(const StringList& stringList)
-		: ManagedConstantHeader(Type::Structure), StringMap(stringList) {}
+		: ManagedConstantRoot(Type::Structure), StringMap(stringList) {}
 	Structure::Structure(Structure&& structure) noexcept
-		: ManagedConstantHeader(Type::Structure), StringMap(std::move(structure)) {}
+		: ManagedConstantRoot(Type::Structure), StringMap(std::move(structure)) {}
 
 	Structure& Structure::operator=(Structure&& structure) noexcept {
 		StringMap::operator=(std::move(structure));

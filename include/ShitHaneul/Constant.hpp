@@ -236,22 +236,22 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	struct ManagedConstantHeader {
+	struct ManagedConstantRoot {
 		ShitHaneul::Type Type;
 		std::uint64_t Age = 0;
 		int Survived = 0;
 		bool IsMarked = false;
 
-		ManagedConstantHeader(ShitHaneul::Type type) noexcept;
-		ManagedConstantHeader(const ManagedConstantHeader& header) noexcept = default;
-		~ManagedConstantHeader() = default;
+		ManagedConstantRoot(ShitHaneul::Type type) noexcept;
+		ManagedConstantRoot(const ManagedConstantRoot& header) noexcept = default;
+		~ManagedConstantRoot() = default;
 
-		ManagedConstantHeader& operator=(const ManagedConstantHeader& header) noexcept = default;
+		ManagedConstantRoot& operator=(const ManagedConstantRoot& header) noexcept = default;
 	};
 }
 
 namespace ShitHaneul {
-	class Structure final : public ManagedConstantHeader, public StringMap {
+	class Structure final : public ManagedConstantRoot, public StringMap {
 	public:
 		Structure() noexcept;
 		explicit Structure(const StringList& stringList);

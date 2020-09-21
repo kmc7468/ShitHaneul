@@ -163,7 +163,7 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	class Function final : public ManagedConstantHeader{
+	class Function final : public ManagedConstantRoot{
 	public:
 		FunctionInfo* Info = nullptr;
 		StringMap JosaMap;
