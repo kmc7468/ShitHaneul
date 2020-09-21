@@ -255,7 +255,7 @@ namespace ShitHaneul {
 				}
 
 				const auto target = std::get<StructureConstant>(frame.GetTopAndPop());
-				const std::optional<Constant> field = target.Value->Fields[strOperand];
+				const std::optional<Constant> field = (*target.Value)[strOperand];
 				if (field) {
 					frame.Push(*field);
 					break;
@@ -651,14 +651,14 @@ namespace ShitHaneul {
 			}
 
 			const auto node = std::get<StructureConstant>(current);
-			const std::optional<Constant> item = node.Value->Fields[U"첫번째"];
+			const std::optional<Constant> item = (*node.Value)[U"첫번째"];
 			if (item) {
 				if (const auto itemType = GetType(*item); itemType != Type::Character) {
 					RaiseException(offset, InvalidTypeException(u8"문자", typeName(currentType)));
 					return std::nullopt;
 				}
 				result.push_back(std::get<CharacterConstant>(*item).Value);
-				current = *node.Value->Fields[U"나머지"];
+				current = *(*node.Value)[U"나머지"];
 			} else {
 				RaiseException(offset, UndefinedException(u8"필드", u8"첫번째"));
 				return std::nullopt;

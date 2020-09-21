@@ -113,7 +113,7 @@ namespace ShitHaneul {
 			if (rhsType == Type::Character) return std::get<CharacterConstant>(lhs).Value == std::get<CharacterConstant>(rhs).Value;
 			else return false;
 		case Type::Function: return false;
-		case Type::Structure: return lhsType == rhsType && std::get<StructureConstant>(lhs).Value->Fields == std::get<StructureConstant>(rhs).Value->Fields;
+		case Type::Structure: return lhsType == rhsType && *std::get<StructureConstant>(lhs).Value == *std::get<StructureConstant>(rhs).Value;
 		default: return false;
 		}
 	}
@@ -145,13 +145,13 @@ namespace ShitHaneul {
 			std::u32string result(1, U'{');
 
 			const auto structure = std::get<StructureConstant>(constant);
-			const std::uint8_t count = structure.Value->Fields.GetCount();
+			const std::uint8_t count = structure.Value->GetCount();
 			for (std::uint8_t i = 0; i < count; ++i) {
 				if (i) {
 					result += U", ";
 				}
 
-				const auto [name, value] = structure.Value->Fields[i];
+				const auto [name, value] = (*structure.Value)[i];
 				result += name;
 				result += U": ";
 				result += ToString(value);
@@ -307,12 +307,20 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	ManagedConstantHeader::ManagedConstantHeader(ShitHaneul::Type type) noexcept
+		: Type(type) {}
+}
+
+namespace ShitHaneul {
+	Structure::Structure() noexcept
+		: ManagedConstantHeader(Type::Structure) {}
+	Structure::Structure(const StringList& stringList)
+		: ManagedConstantHeader(Type::Structure), StringMap(stringList) {}
 	Structure::Structure(Structure&& structure) noexcept
-		: Header(structure.Header), Fields(std::move(structure.Fields)) {}
+		: ManagedConstantHeader(Type::Structure), StringMap(std::move(structure)) {}
 
 	Structure& Structure::operator=(Structure&& structure) noexcept {
-		Header = structure.Header;
-		Fields = std::move(structure.Fields);
+		StringMap::operator=(std::move(structure));
 		return *this;
 	}
 }

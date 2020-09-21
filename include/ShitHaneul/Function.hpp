@@ -163,14 +163,14 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	class Function final {
+	class Function final : public ManagedConstantHeader{
 	public:
 		FunctionInfo* Info = nullptr;
 		StringMap JosaMap;
 		std::vector<Constant> FreeVariableList;
 
 	public:
-		Function() noexcept = default;
+		Function() noexcept;
 		explicit Function(FunctionInfo* info);
 		Function(const Function& function);
 		Function(Function&& function) noexcept;

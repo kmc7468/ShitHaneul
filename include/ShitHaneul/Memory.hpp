@@ -50,21 +50,8 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
-	enum class MarkedColor {
-		White,
-		Gray,
-		Black,
-	};
+	using ManagedConstant = std::variant<std::monostate, Function, Structure>;
 
-	struct ManagedConstant final {
-		std::variant<std::monostate, Function, StringMap> Value;
-		std::uint64_t Age = 0;
-		int Survived = 0;
-		MarkedColor Color = MarkedColor::White;
-	};
-}
-
-namespace ShitHaneul {
 	class Page final {
 	private:
 		std::vector<ManagedConstant> m_Page;

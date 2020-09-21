@@ -205,7 +205,7 @@ namespace ShitHaneul {
 		Success,
 	};
 
-	class StringMap final {
+	class StringMap {
 	private:
 		std::vector<std::pair<std::u32string_view, Constant>> m_Map;
 		std::uint8_t m_BoundCount = 0;
@@ -237,20 +237,24 @@ namespace ShitHaneul {
 
 namespace ShitHaneul {
 	struct ManagedConstantHeader {
+		ShitHaneul::Type Type;
 		std::uint64_t Age = 0;
 		int Survived = 0;
 		bool IsMarked = false;
+
+		ManagedConstantHeader(ShitHaneul::Type type) noexcept;
+		ManagedConstantHeader(const ManagedConstantHeader& header) noexcept = default;
+		~ManagedConstantHeader() = default;
+
+		ManagedConstantHeader& operator=(const ManagedConstantHeader& header) noexcept = default;
 	};
 }
 
 namespace ShitHaneul {
-	class Structure final {
+	class Structure final : public ManagedConstantHeader, public StringMap {
 	public:
-		ManagedConstantHeader Header;
-		StringMap Fields;
-
-	public:
-		Structure() noexcept = default;
+		Structure() noexcept;
+		explicit Structure(const StringList& stringList);
 		Structure(Structure&& structure) noexcept;
 		~Structure() = default;
 

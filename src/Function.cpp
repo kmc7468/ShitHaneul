@@ -124,12 +124,14 @@ namespace ShitHaneul {
 }
 
 namespace ShitHaneul {
+	Function::Function() noexcept
+		: ManagedConstantHeader(Type::Function) {}
 	Function::Function(FunctionInfo* info)
-		: Info(info), JosaMap(info->JosaList) {}
+		: ManagedConstantHeader(Type::Function), Info(info), JosaMap(info->JosaList) {}
 	Function::Function(const Function& function)
-		: Info(function.Info), JosaMap(function.JosaMap), FreeVariableList(function.FreeVariableList) {}
+		: ManagedConstantHeader(Type::Function), Info(function.Info), JosaMap(function.JosaMap), FreeVariableList(function.FreeVariableList) {}
 	Function::Function(Function&& function) noexcept
-		: Info(function.Info), JosaMap(std::move(function.JosaMap)), FreeVariableList(std::move(function.FreeVariableList)) {}
+		: ManagedConstantHeader(Type::Function), Info(function.Info), JosaMap(std::move(function.JosaMap)), FreeVariableList(std::move(function.FreeVariableList)) {}
 
 	Function& Function::operator=(const Function& function) noexcept {
 		Info = function.Info;
