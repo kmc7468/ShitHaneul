@@ -557,27 +557,10 @@ namespace ShitHaneul {
 	}
 	void Interpreter::RegisterBuiltinFunctions() {
 		using namespace std::string_literals;
-		RegisterBuiltinFunction(U"문자_출력하다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
-			if (const auto type = GetType(arguments[0].second); type != Type::Character) {
-				RaiseException(offset, InvalidTypeException(u8"문자", typeName(type)));
-				return std::monostate{};
-			} else {
-				WriteCharacterToStdout(std::get<CharacterConstant>(arguments[0].second).Value);
-				return NoneConstant{};
-			}
-		});
-		RegisterBuiltinFunction(U"문자열화하다", { { U"을"s } }, [&](std::uint64_t, const StringMap& arguments) -> Constant {
+		RegisterBuiltinFunction(U"문자열로 바꾸다", { { U"을"s } }, [&](std::uint64_t, const StringMap& arguments) -> Constant {
 			return ConvertStringToList(ToString(arguments[0].second));
 		});
-		RegisterBuiltinFunction(U"입력받다", {}, [&](std::uint64_t, const StringMap&) -> Constant {
-			std::u32string result;
-			do {
-				result.push_back(ReadCharacterFromStdin());
-			} while (result.back() != '\n');
-			result.erase(result.end() - 1);
-			return ConvertStringToList(result);
-		});
-		RegisterBuiltinFunction(U"정수화하다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
+		RegisterBuiltinFunction(U"정수로 바꾸다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
 			const auto type = GetType(arguments[0].second);
 			switch (type) {
 			case Type::Integer: return arguments[0].second;
@@ -594,7 +577,7 @@ namespace ShitHaneul {
 				return std::monostate{};
 			}
 		});
-		RegisterBuiltinFunction(U"실수화하다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
+		RegisterBuiltinFunction(U"실수로 바꾸다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
 			const auto type = GetType(arguments[0].second);
 			switch (type) {
 			case Type::Integer: return RealConstant(static_cast<double>(std::get<IntegerConstant>(arguments[0].second).Value));
@@ -611,10 +594,39 @@ namespace ShitHaneul {
 				return std::monostate{};
 			}
 		});
-		RegisterBuiltinFunction(U"난수_가져오다", {}, [&](std::uint64_t, const StringMap&) -> Constant {
+		RegisterBuiltinFunction(U"문자로 보여주다", { { U"을"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
+			if (const auto type = GetType(arguments[0].second); type != Type::Character) {
+				RaiseException(offset, InvalidTypeException(u8"문자", typeName(type)));
+				return std::monostate{};
+			} else {
+				WriteCharacterToStdout(std::get<CharacterConstant>(arguments[0].second).Value);
+				return NoneConstant{};
+			}
+		});
+		RegisterBuiltinFunction(U"입력받다", {}, [&](std::uint64_t, const StringMap&) -> Constant {
+			std::u32string result;
+			do {
+				result.push_back(ReadCharacterFromStdin());
+			} while (result.back() != '\n');
+			result.erase(result.end() - 1);
+			return ConvertStringToList(result);
+		});
+		RegisterBuiltinFunction(U"난수를 가져오다", {}, [&](std::uint64_t, const StringMap&) -> Constant {
 			static std::mt19937 mt(std::random_device{}());
 			static std::uniform_int_distribution<std::int32_t> dist(0, INT32_MAX);
 			return IntegerConstant(dist(mt));
+		});
+		RegisterBuiltinFunction(U"유니코드 값", { { U"의"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
+			if (const auto type = GetType(arguments[0].second); type != Type::Character) {
+				RaiseException(offset, InvalidTypeException(u8"문자", typeName(type)));
+				return std::monostate{};
+			} else return IntegerConstant(static_cast<std::int64_t>(std::get<CharacterConstant>(arguments[0].second).Value));
+		});
+		RegisterBuiltinFunction(U"유니코드 문자", { { U"번째"s } }, [&](std::uint64_t offset, const StringMap& arguments) -> Constant {
+			if (const auto type = GetType(arguments[0].second); type != Type::Integer) {
+				RaiseException(offset, InvalidTypeException(u8"정수", typeName(type)));
+				return std::monostate{};
+			} else return CharacterConstant(static_cast<char32_t>(std::get<IntegerConstant>(arguments[0].second).Value));
 		});
 	}
 	Constant Interpreter::ConvertStringToList(const std::u32string& string) {
