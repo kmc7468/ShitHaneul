@@ -565,7 +565,13 @@ namespace ShitHaneul {
 			switch (type) {
 			case Type::Integer: return arguments[0].second;
 			case Type::Real: return IntegerConstant(static_cast<std::int64_t>(std::get<RealConstant>(arguments[0].second).Value));
-			case Type::Character: return IntegerConstant(static_cast<std::int64_t>(std::get<CharacterConstant>(arguments[0].second).Value));
+			case Type::Character: {
+				const char32_t value = std::get<CharacterConstant>(arguments[0].second).Value;
+				if (value < '0' || value > '9') {
+					RaiseException(offset, InvalidValueException());
+					return std::monostate{};
+				} else return IntegerConstant(static_cast<std::int64_t>(value) - '0');
+			}
 			case Type::Structure: {
 				const std::optional<std::u32string> str = ConvertListToString(offset, arguments[0].second);
 				if (!str) return std::monostate();
@@ -687,6 +693,9 @@ namespace ShitHaneul {
 		m_Exception.Mesasge = std::move(message);
 
 		frame.SetCurrentOffset(offset);
+	}
+	std::string Interpreter::InvalidValueException() {
+		return u8"잘못된 값입니다.";
 	}
 	std::string Interpreter::InvalidTypeException(const std::string_view& expected, const std::string_view& given) {
 		std::string result(expected);

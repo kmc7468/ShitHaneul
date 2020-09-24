@@ -89,6 +89,7 @@ namespace ShitHaneul {
 		std::optional<std::u32string> ConvertListToString(std::uint64_t offset, const Constant& list);
 
 		void RaiseException(std::uint64_t offset, std::string&& message);
+		static std::string InvalidValueException();
 		static std::string InvalidTypeException(const std::string_view& expected, const std::string_view& given);
 		static std::string UndefinedException(const std::string_view& type, const std::string_view& name);
 		static std::string UndefinedFunctionException();
