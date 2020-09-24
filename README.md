@@ -1,5 +1,5 @@
 # ShitHaneul
-**싙하늘**은 [서동휘](https://github.com/suhdonghwi)님이 개발하신 한글 프로그래밍 언어 [누리](https://github.com/suhdonghwi/haneul)의 서드파티 C++ 백엔드입니다.
+**싙하늘**은 [서동휘](https://github.com/suhdonghwi)님이 개발하신 한글 프로그래밍 언어 [누리](https://github.com/suhdonghwi/nuri)의 서드파티 C++ 백엔드입니다.
 
 ## 사용법
 ```
