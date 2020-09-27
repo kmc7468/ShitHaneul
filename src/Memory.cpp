@@ -1,5 +1,7 @@
 #include <ShitHaneul/Memory.hpp>
 
+#include <ShitHaneul/Interpreter.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -135,6 +137,7 @@ namespace ShitHaneul {
 	}
 	void GarbageCollector::StartGC(void(GarbageCollector::*pointer)(), bool shouldCreateNewThread) {
 		m_Status = Status::Working;
+		m_StackFrame = m_Interpreter.GetStackTrace();
 		if (shouldCreateNewThread) {
 			m_GCThread = std::make_unique<std::thread>(pointer, this);
 		} else {

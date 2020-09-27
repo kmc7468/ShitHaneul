@@ -13,10 +13,21 @@ namespace ShitHaneul {
 		: m_Stack(currentFunction->Info->GetStackSize()) {
 		Recycle(currentFunction, prevStackFrame, false);
 	}
+	StackFrame::StackFrame(const StackFrame& stackFrame)
+		: m_Stack(stackFrame.m_Stack), m_Top(stackFrame.m_Top),
+		m_CurrentFunction(stackFrame.m_CurrentFunction), m_CurrentOffset(stackFrame.m_CurrentOffset) {}
 	StackFrame::StackFrame(StackFrame&& stackFrame) noexcept
 		: m_Stack(std::move(stackFrame.m_Stack)), m_Top(stackFrame.m_Top),
 		m_CurrentFunction(stackFrame.m_CurrentFunction), m_CurrentOffset(stackFrame.m_CurrentOffset) {}
 
+	StackFrame& StackFrame::operator=(const StackFrame& stackFrame) {
+		m_Stack = stackFrame.m_Stack;
+		m_Top = stackFrame.m_Top;
+
+		m_CurrentFunction = stackFrame.m_CurrentFunction;
+		m_CurrentOffset = stackFrame.m_CurrentOffset;
+		return *this;
+	}
 	StackFrame& StackFrame::operator=(StackFrame&& stackFrame) noexcept {
 		m_Stack = std::move(stackFrame.m_Stack);
 		m_Top = stackFrame.m_Top;

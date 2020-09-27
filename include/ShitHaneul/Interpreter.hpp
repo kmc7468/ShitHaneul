@@ -24,10 +24,12 @@ namespace ShitHaneul {
 
 	public:
 		StackFrame(Function* currentFunction, StackFrame* prevStackFrame);
+		StackFrame(const StackFrame& stackFrame);
 		StackFrame(StackFrame&& stackFrame) noexcept;
 		~StackFrame() = default;
 
 	public:
+		StackFrame& operator=(const StackFrame& stackFrame);
 		StackFrame& operator=(StackFrame&& stackFrame) noexcept;
 
 	public:

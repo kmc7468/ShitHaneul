@@ -107,6 +107,7 @@ namespace ShitHaneul {
 
 namespace ShitHaneul {
 	class Interpreter;
+	class StackFrame;
 
 	class GarbageCollector final {
 	private:
@@ -123,6 +124,7 @@ namespace ShitHaneul {
 		std::atomic<Status> m_Status = Status::Idle;
 		std::unique_ptr<std::thread> m_GCThread = nullptr;
 
+		std::vector<StackFrame> m_StackFrame;
 		std::uint8_t m_GCMaxGeneration = 0;
 		std::unordered_map<ManagedConstantRoot*, std::vector<ManagedConstantRoot**>> m_GCPointerTable;
 
