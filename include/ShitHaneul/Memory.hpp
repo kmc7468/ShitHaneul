@@ -10,6 +10,7 @@
 #include <memory>
 #include <thread>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -123,6 +124,9 @@ namespace ShitHaneul {
 		std::unique_ptr<std::thread> m_GCThread = nullptr;
 		std::uint64_t m_ObjectCount = 0;
 
+		std::uint8_t m_GCMaxGeneration = 0;
+		std::unordered_map<ManagedConstantRoot*, std::vector<ManagedConstantRoot**>> m_GCPointerTable;
+
 	public:
 		GarbageCollector(Interpreter& interpreter, std::size_t youngPageSize, std::size_t oldPageSize);
 		GarbageCollector(const GarbageCollector&) = delete;
@@ -142,10 +146,13 @@ namespace ShitHaneul {
 	private:
 		ManagedConstant* Reserve(bool shouldDoMajorGC);
 		void StartGC(void(GarbageCollector::*pointer)(), bool shouldCreateNewThread);
-		ManagedConstant* CreatePageAndAllocate( bool shouldDoMajorGC);
+		ManagedConstant* CreatePageAndAllocate(bool shouldDoMajorGC);
 
 		void MinorGC();
 		void MajorGC();
+
+		void Mark(const Constant& constant);
+		void Mark(ManagedConstantRoot* constant);
 	};
 }
 

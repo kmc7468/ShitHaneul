@@ -238,6 +238,7 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	struct ManagedConstantRoot {
 		ShitHaneul::Type Type;
+		std::uint8_t Generation = 0;
 		std::uint64_t Age = 0;
 		int Survived = 0;
 		bool IsMarked = false;

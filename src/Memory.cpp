@@ -147,7 +147,7 @@ namespace ShitHaneul {
 			return m_FrontYoungGeneration.Allocate();
 		} catch (...) {
 			if (shouldDoMajorGC) {
-				MajorGC();
+				StartGC(&GarbageCollector::MajorGC, false);
 				return CreatePageAndAllocate(false);
 			} else {
 				if (m_GCThread->joinable()) {
@@ -159,9 +159,46 @@ namespace ShitHaneul {
 	}
 
 	void GarbageCollector::MinorGC() {
+		m_GCMaxGeneration = 0;
+
 		// TODO
 	}
 	void GarbageCollector::MajorGC() {
+		m_GCMaxGeneration = 1;
+
 		// TODO
+	}
+
+	void GarbageCollector::Mark(const Constant& constant) {
+		if (!constant.index()) return;
+
+		const auto type = GetType(constant);
+		if (type == Type::Function) {
+			Mark(std::get<FunctionConstant>(constant).Value);
+		} else if (type == Type::Structure) {
+			Mark(std::get<StructureConstant>(constant).Value);
+		}
+	}
+	void GarbageCollector::Mark(ManagedConstantRoot* constant) {
+		if (constant->Generation > m_GCMaxGeneration || constant->Age == 0 || constant->IsMarked) return;
+
+		constant->IsMarked = true;
+		m_GCPointerTable[constant];
+		if (constant->Type == Type::Function) {
+			const auto func = static_cast<Function*>(constant);
+			const std::uint8_t josaCount = func->JosaMap.GetCount();
+			for (std::uint8_t i = 0; i < josaCount; ++i) {
+				Mark(func->JosaMap[i].second);
+			}
+			for (const Constant& freeVar : func->FreeVariableList) {
+				Mark(freeVar);
+			}
+		} else if (constant->Type == Type::Structure) {
+			const auto structure = static_cast<Structure*>(constant);
+			const std::uint8_t fieldCount = structure->GetCount();
+			for (std::uint8_t i = 0; i < fieldCount; ++i) {
+				Mark((*structure)[i].second);
+			}
+		}
 	}
 }
