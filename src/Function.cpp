@@ -126,6 +126,8 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	Function::Function() noexcept
 		: ManagedConstantRoot(Type::Function) {}
+	Function::Function(bool isReady) noexcept
+		: ManagedConstantRoot(Type::Function, isReady) {}
 	Function::Function(FunctionInfo* info)
 		: ManagedConstantRoot(Type::Function), Info(info), JosaMap(info->JosaList) {}
 	Function::Function(const Function& function)

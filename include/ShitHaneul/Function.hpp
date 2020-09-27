@@ -171,6 +171,7 @@ namespace ShitHaneul {
 
 	public:
 		Function() noexcept;
+		explicit Function(bool isReady) noexcept;
 		explicit Function(FunctionInfo* info);
 		Function(const Function& function);
 		Function(Function&& function) noexcept;

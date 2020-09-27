@@ -97,11 +97,11 @@ namespace ShitHaneul {
 	}
 
 	void GarbageCollector::Allocate(Function* reserved) noexcept {
-		reserved->Age = ++m_ObjectCount;
+		reserved->IsReady = true;
 	}
 	Function* GarbageCollector::Reserve() {
 		ManagedConstant* const reserved = Reserve(false);
-		*reserved = Function();
+		*reserved = Function(false);
 		return &std::get<Function>(*reserved);
 	}
 
@@ -180,7 +180,7 @@ namespace ShitHaneul {
 		}
 	}
 	void GarbageCollector::Mark(ManagedConstantRoot* constant) {
-		if (constant->Generation > m_GCMaxGeneration || constant->Age == 0 || constant->IsMarked) return;
+		if (constant->Generation > m_GCMaxGeneration || !constant->IsReady || constant->IsMarked) return;
 
 		constant->IsMarked = true;
 		m_GCPointerTable[constant];

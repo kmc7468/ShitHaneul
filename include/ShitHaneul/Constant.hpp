@@ -239,11 +239,12 @@ namespace ShitHaneul {
 	struct ManagedConstantRoot {
 		ShitHaneul::Type Type;
 		std::uint8_t Generation = 0;
-		std::uint64_t Age = 0;
 		int Survived = 0;
+		bool IsReady = true;
 		bool IsMarked = false;
 
-		ManagedConstantRoot(ShitHaneul::Type type) noexcept;
+		explicit ManagedConstantRoot(ShitHaneul::Type type) noexcept;
+		ManagedConstantRoot(ShitHaneul::Type type, bool isReady) noexcept;
 		ManagedConstantRoot(const ManagedConstantRoot& header) noexcept = default;
 		~ManagedConstantRoot() = default;
 

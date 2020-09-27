@@ -26,9 +26,6 @@ namespace ShitHaneul {
 	T* GarbageCollector::Allocate(Args&&...args) {
 		ManagedConstant* const reserved = Reserve(false);
 		*reserved = T(std::forward<Args>(args)...);
-
-		T* const result = &std::get<T>(*reserved);
-		result->Age = ++m_ObjectCount;
-		return result;
+		return &std::get<T>(*reserved);
 	}
 }

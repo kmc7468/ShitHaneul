@@ -122,7 +122,6 @@ namespace ShitHaneul {
 		Generation m_OldGeneration;
 		std::atomic<Status> m_Status = Status::Idle;
 		std::unique_ptr<std::thread> m_GCThread = nullptr;
-		std::uint64_t m_ObjectCount = 0;
 
 		std::uint8_t m_GCMaxGeneration = 0;
 		std::unordered_map<ManagedConstantRoot*, std::vector<ManagedConstantRoot**>> m_GCPointerTable;

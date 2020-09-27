@@ -309,6 +309,8 @@ namespace ShitHaneul {
 namespace ShitHaneul {
 	ManagedConstantRoot::ManagedConstantRoot(ShitHaneul::Type type) noexcept
 		: Type(type) {}
+	ManagedConstantRoot::ManagedConstantRoot(ShitHaneul::Type type, bool isReady) noexcept
+		: Type(type), IsReady(isReady) {}
 }
 
 namespace ShitHaneul {
