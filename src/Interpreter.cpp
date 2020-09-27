@@ -110,11 +110,14 @@ namespace {
 }
 
 namespace ShitHaneul {
+	Interpreter::Interpreter()
+		: m_GarbageCollector(*this, 8192, 65536) {}
+
 	void Interpreter::Load(ByteFile&& byteFile) {
 		m_ByteFile = std::move(byteFile);
 
 		m_StackTrace.clear();
-		m_StackTrace.emplace_back(m_ByteFile.GetRoot(), nullptr);
+		m_StackTrace.emplace_back(m_ByteFile.GetRootFunction(), nullptr);
 		m_GlobalVariables = std::vector<Constant>(m_ByteFile.GetGlobalNameCount() + 1);
 		m_ByteFile.AllocateStructureInfos();
 
@@ -190,7 +193,7 @@ namespace ShitHaneul {
 					break;
 				}
 
-				const auto newFunc = m_ByteFile.CopyFunction(target.Value);
+				const auto newFunc = m_GarbageCollector.Allocate<Function>(*target.Value);
 				for (std::uint8_t i = 0; i < strListOperand.GetCount(); ++i) {
 					if (strListOperand[i] == U"_") {
 						const BoundResult result = newFunc->JosaMap.BindConstant(frame.GetTopAndPop());
@@ -230,7 +233,7 @@ namespace ShitHaneul {
 
 			case OpCode::MakeStruct: {
 				const auto& [index, fields] = std::get<std::pair<std::size_t, StringList>>(instruction.Operand);
-				StringMap* const structure = m_ByteFile.CreateStructure(index);
+				const auto structure = m_GarbageCollector.Allocate<Structure>(m_ByteFile.GetStructure(index));
 				const std::uint8_t givenFieldCount = fields.GetCount();
 				if (structure->GetCount() != givenFieldCount) {
 					RaiseException(offset, FieldMismatchException(structure->GetCount(), givenFieldCount));
@@ -284,7 +287,7 @@ namespace ShitHaneul {
 
 			case OpCode::FreeVar: {
 				auto& target = std::get<FunctionConstant>(frame.GetTop());
-				const auto newFunc = m_ByteFile.CopyFunction(target.Value);
+				const auto newFunc = m_GarbageCollector.Allocate<Function>(*target.Value);
 
 				const auto count = static_cast<std::uint8_t>(freeVarListOperand.size());
 				for (std::uint8_t i = 0; i < count; ++i) {
@@ -292,9 +295,7 @@ namespace ShitHaneul {
 					if (type == VariableType::Local) {
 						Constant& variable = frame.LoadDirect(index);
 						if (!variable.index()) {
-							std::unique_ptr<Function> dummyFunc(new Function);
-							m_ByteFile.AddFunction(dummyFunc.get());
-							variable = FunctionConstant(dummyFunc.release(), true);
+							variable = FunctionConstant(m_GarbageCollector.Reserve(), true);
 						}
 						newFunc->FreeVariableList.push_back(variable);
 					} else {
@@ -618,25 +619,21 @@ namespace ShitHaneul {
 	Constant Interpreter::ConvertStringToList(const std::u32string& string) {
 		if (string.empty()) return NoneConstant{};
 
-		static const StringMap nodeBase(m_ByteFile.GetStructureInfo(m_ByteFile.GetStructureNameIndex(U"목록")));
+		static const Structure nodeBase(m_ByteFile.GetStructure(m_ByteFile.GetStructureNameIndex(U"목록")));
 
-		std::vector<std::unique_ptr<StringMap>> nodes;
-		StringMap* first = nullptr;
+		Structure* first = nullptr;
+		Structure* prev = nullptr;
 		for (std::size_t i = 0; i < string.size(); ++i) {
-			std::unique_ptr<StringMap>& node = nodes.emplace_back(new StringMap(nodeBase));
+			const auto node = m_GarbageCollector.Allocate<Structure>(nodeBase);
 			node->BindConstant(U"첫번째", CharacterConstant(string[i]));
 			if (i) {
-				nodes[i - 1]->BindConstant(StructureConstant(node.get()));
+				prev->BindConstant(StructureConstant(node));
 			} else {
-				first = node.get();
+				first = node;
 			}
+			prev = node;
 		}
-		nodes.back()->BindConstant(NoneConstant{});
-
-		m_ByteFile.AllocateStructures(nodes.size());
-		for (std::unique_ptr<StringMap>& node : nodes) {
-			m_ByteFile.AddStructure(node.release());
-		}
+		prev->BindConstant(NoneConstant{});
 		return StructureConstant(first);
 	}
 	std::optional<std::u32string> Interpreter::ConvertListToString(std::uint64_t offset, const Constant& list) {

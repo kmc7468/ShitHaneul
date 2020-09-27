@@ -316,6 +316,8 @@ namespace ShitHaneul {
 		: ManagedConstantRoot(Type::Structure) {}
 	Structure::Structure(const StringList& stringList)
 		: ManagedConstantRoot(Type::Structure), StringMap(stringList) {}
+	Structure::Structure(const Structure& structure)
+		: ManagedConstantRoot(Type::Structure), StringMap(structure) {}
 	Structure::Structure(Structure&& structure) noexcept
 		: ManagedConstantRoot(Type::Structure), StringMap(std::move(structure)) {}
 

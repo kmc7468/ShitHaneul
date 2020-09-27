@@ -14,13 +14,11 @@ namespace ShitHaneul {
 	private:
 		std::unordered_map<std::u32string, std::size_t> m_GlobalNameMap;
 
-		std::vector<FunctionInfo*> m_FunctionInfos;
 		std::vector<Function*> m_Functions;
 		Function* m_RootFunction = nullptr;
 
 		std::unordered_map<std::u32string, std::size_t> m_StructureNameMap;
 		std::vector<StringList> m_StructureInfos;
-		std::vector<StringMap*> m_Structures;
 
 	public:
 		ByteFile() = default;
@@ -37,20 +35,14 @@ namespace ShitHaneul {
 		std::size_t GetGlobalNameIndex(const std::u32string& name, bool createNewIndex = true);
 
 		Function* RegisterFunction(FunctionInfo* functionInfo);
-		void AddFunction(Function* function);
-		Function* CopyFunction(const Function* function);
-		const Function* GetRoot() const noexcept;
-		Function* GetRoot() noexcept;
-		void SetRoot(Function* function) noexcept;
+		Function* GetRootFunction() noexcept;
+		void SetRootFunction(Function* newRootFunction) noexcept;
 
 		std::size_t GetStructureNameCount() const noexcept;
 		std::size_t GetStructureNameIndex(const std::u32string& name);
 		void RegisterStructure(std::size_t index, const StringList& structureInfo);
-		void AllocateStructures(std::size_t required);
 		void AllocateStructureInfos();
-		void AddStructure(StringMap* structure);
-		StringMap* CreateStructure(std::size_t index);
-		const StringList& GetStructureInfo(std::size_t index);
+		const StringList& GetStructure(std::size_t index);
 	};
 }
 

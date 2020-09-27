@@ -255,6 +255,7 @@ namespace ShitHaneul {
 	public:
 		Structure() noexcept;
 		explicit Structure(const StringList& stringList);
+		Structure(const Structure& structure);
 		Structure(Structure&& structure) noexcept;
 		~Structure() = default;
 

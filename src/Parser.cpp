@@ -11,10 +11,8 @@
 namespace ShitHaneul {
 	ByteFile::ByteFile(ByteFile&& byteFile) noexcept
 		: m_GlobalNameMap(std::move(byteFile.m_GlobalNameMap)),
-		m_FunctionInfos(std::move(byteFile.m_FunctionInfos)), m_Functions(std::move(byteFile.m_Functions)),
-		m_RootFunction(byteFile.m_RootFunction),
-		m_StructureNameMap(std::move(byteFile.m_StructureNameMap)), m_StructureInfos(std::move(byteFile.m_StructureInfos)),
-		m_Structures(std::move(byteFile.m_Structures)) {}
+		m_Functions(std::move(byteFile.m_Functions)), m_RootFunction(byteFile.m_RootFunction),
+		m_StructureNameMap(std::move(byteFile.m_StructureNameMap)), m_StructureInfos(std::move(byteFile.m_StructureInfos)) {}
 	ByteFile::~ByteFile() {
 		Clear();
 	}
@@ -22,13 +20,11 @@ namespace ShitHaneul {
 	ByteFile& ByteFile::operator=(ByteFile&& byteFile) noexcept {
 		m_GlobalNameMap = std::move(byteFile.m_GlobalNameMap);
 
-		m_FunctionInfos = std::move(byteFile.m_FunctionInfos);
 		m_Functions = std::move(byteFile.m_Functions);
 		m_RootFunction = byteFile.m_RootFunction;
 
 		m_StructureNameMap = std::move(byteFile.m_StructureNameMap);
 		m_StructureInfos = std::move(byteFile.m_StructureInfos);
-		m_Structures = std::move(byteFile.m_Structures);
 		return *this;
 	}
 
@@ -36,13 +32,10 @@ namespace ShitHaneul {
 		m_GlobalNameMap.clear();
 		m_StructureNameMap.clear();
 
-		static constexpr auto deleter = [](auto pointer) {
-			delete pointer;
-		};
-
-		std::for_each(m_FunctionInfos.begin(), m_FunctionInfos.end(), deleter);
-		std::for_each(m_Functions.begin(), m_Functions.end(), deleter);
-		std::for_each(m_Structures.begin(), m_Structures.end(), deleter);
+		for (Function* func : m_Functions) {
+			delete func->Info;
+			delete func;
+		}
 	}
 
 	std::size_t ByteFile::GetGlobalNameCount() const noexcept {
@@ -57,28 +50,15 @@ namespace ShitHaneul {
 	}
 
 	Function* ByteFile::RegisterFunction(FunctionInfo* functionInfo) {
-		m_FunctionInfos.push_back(functionInfo);
-
-		std::unique_ptr<Function> result(new Function(functionInfo));
-		AddFunction(result.get());
-		return result.release();
+		std::unique_ptr<Function> function(new Function(functionInfo));
+		m_Functions.push_back(function.get());
+		return function.release();
 	}
-	void ByteFile::AddFunction(Function* function) {
-		m_Functions.push_back(function);
-	}
-	Function* ByteFile::CopyFunction(const Function* function) {
-		std::unique_ptr<Function> result(new Function(*function));
-		AddFunction(result.get());
-		return result.release();
-	}
-	const Function* ByteFile::GetRoot() const noexcept {
+	Function* ByteFile::GetRootFunction() noexcept {
 		return m_RootFunction;
 	}
-	Function* ByteFile::GetRoot() noexcept {
-		return m_RootFunction;
-	}
-	void ByteFile::SetRoot(Function* function) noexcept {
-		m_RootFunction = function;
+	void ByteFile::SetRootFunction(Function* newRootFunction) noexcept {
+		m_RootFunction = newRootFunction;
 	}
 
 	std::size_t ByteFile::GetStructureNameCount() const noexcept {
@@ -94,21 +74,10 @@ namespace ShitHaneul {
 	void ByteFile::RegisterStructure(std::size_t index, const StringList& structureInfo) {
 		m_StructureInfos[index] = structureInfo;
 	}
-	void ByteFile::AllocateStructures(std::size_t required) {
-		m_Structures.reserve(m_Structures.size() + required);
-	}
 	void ByteFile::AllocateStructureInfos() {
 		m_StructureInfos.resize(GetStructureNameCount() + 1);
 	}
-	void ByteFile::AddStructure(StringMap* structure) {
-		m_Structures.push_back(structure);
-	}
-	StringMap* ByteFile::CreateStructure(std::size_t index) {
-		std::unique_ptr<StringMap> result(new StringMap(m_StructureInfos[index]));
-		AddStructure(result.get());
-		return result.release();
-	}
-	const StringList& ByteFile::GetStructureInfo(std::size_t index) {
+	const StringList& ByteFile::GetStructure(std::size_t index) {
 		return m_StructureInfos[index];
 	}
 }
@@ -131,7 +100,7 @@ namespace ShitHaneul {
 		return true;
 	}
 	void Parser::Parse() {
-		m_Result.SetRoot(ParseFunction());
+		m_Result.SetRootFunction(ParseFunction());
 	}
 	ByteFile Parser::GetResult() noexcept {
 		return std::move(m_Result);

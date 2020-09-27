@@ -2,6 +2,7 @@
 
 #include <ShitHaneul/Constant.hpp>
 #include <ShitHaneul/Function.hpp>
+#include <ShitHaneul/Memory.hpp>
 #include <ShitHaneul/Parser.hpp>
 
 #include <cstddef>
@@ -66,9 +67,10 @@ namespace ShitHaneul {
 
 		std::vector<StackFrame> m_StackTrace;
 		std::vector<Constant> m_GlobalVariables;
+		GarbageCollector m_GarbageCollector;
 
 	public:
-		Interpreter() = default;
+		Interpreter();
 		Interpreter(const Interpreter&) = delete;
 		~Interpreter() = default;
 
