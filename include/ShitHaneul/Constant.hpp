@@ -223,6 +223,7 @@ namespace ShitHaneul {
 		bool operator==(const StringMap& other) const noexcept;
 		bool operator!=(const StringMap& other) const noexcept;
 		std::pair<std::u32string_view, Constant> operator[](std::uint8_t index) const noexcept;
+		std::pair<std::u32string_view, Constant>& operator[](std::uint8_t index) noexcept;
 		std::optional<Constant> operator[](const std::u32string_view& string) const noexcept;
 
 	public:

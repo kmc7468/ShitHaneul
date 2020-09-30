@@ -124,9 +124,10 @@ namespace ShitHaneul {
 		std::atomic<Status> m_Status = Status::Idle;
 		std::unique_ptr<std::thread> m_GCThread = nullptr;
 
-		std::vector<StackFrame> m_StackFrame;
+		std::vector<StackFrame> m_StackTrace;
+		std::vector<Constant> m_GlobalVariables;
 		std::uint8_t m_GCMaxGeneration = 0;
-		std::unordered_map<ManagedConstantRoot*, std::vector<ManagedConstantRoot**>> m_GCPointerTable;
+		std::unordered_map<ManagedConstantRoot*, std::vector<std::variant<Function**, Structure**>>> m_GCPointerTable;
 
 	public:
 		GarbageCollector(Interpreter& interpreter, std::size_t youngPageSize, std::size_t oldPageSize);
@@ -152,8 +153,9 @@ namespace ShitHaneul {
 		void MinorGC();
 		void MajorGC();
 
-		void Mark(const Constant& constant);
-		void Mark(ManagedConstantRoot* constant);
+		void Mark();
+		void Mark(Constant& constant);
+		void Mark(ManagedConstantRoot* constant, const std::variant<Function**, Structure**>& pointer);
 	};
 }
 

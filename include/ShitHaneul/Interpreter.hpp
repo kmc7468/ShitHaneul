@@ -40,6 +40,7 @@ namespace ShitHaneul {
 		Constant& GetTop() noexcept;
 		Constant GetTopAndPop() noexcept;
 		Constant& GetUnderTop() noexcept;
+		std::size_t GetTopOffset() const noexcept;
 
 		void Store(std::uint32_t index);
 		void StoreDirect(std::uint32_t index, const Constant& constant);
@@ -84,6 +85,7 @@ namespace ShitHaneul {
 		bool Interpret();
 		const Exception& GetException() const noexcept;
 		const std::vector<StackFrame>& GetStackTrace() const noexcept;
+		const std::vector<Constant>& GetGlobalVariables() const noexcept;
 
 	private:
 		void RegisterBuiltinFunction(const std::u32string& name, StringList&& josaList,

@@ -74,6 +74,9 @@ namespace ShitHaneul {
 	Constant& StackFrame::GetUnderTop() noexcept {
 		return m_Stack[m_Top - 2];
 	}
+	std::size_t StackFrame::GetTopOffset() const noexcept {
+		return m_Top;
+	}
 
 	void StackFrame::Store(std::uint32_t index) {
 		StoreDirect(index, m_Stack[--m_Top]);
@@ -555,6 +558,9 @@ namespace ShitHaneul {
 	}
 	const std::vector<StackFrame>& Interpreter::GetStackTrace() const noexcept {
 		return m_StackTrace;
+	}
+	const std::vector<Constant>& Interpreter::GetGlobalVariables() const noexcept {
+		return m_GlobalVariables;
 	}
 
 	void Interpreter::RegisterBuiltinFunction(const std::u32string& name, StringList&& josaList,

@@ -259,6 +259,9 @@ namespace ShitHaneul {
 	std::pair<std::u32string_view, Constant> StringMap::operator[](std::uint8_t index) const noexcept {
 		return m_Map[static_cast<std::size_t>(index)];
 	}
+	std::pair<std::u32string_view, Constant>& StringMap::operator[](std::uint8_t index) noexcept {
+		return m_Map[static_cast<std::size_t>(index)];
+	}
 	std::optional<Constant> StringMap::operator[](const std::u32string_view& string) const noexcept {
 		const auto iter = std::find_if(m_Map.rbegin(), m_Map.rend(), [string](const auto& element) {
 			return element.first == string;

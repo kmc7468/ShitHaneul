@@ -137,7 +137,8 @@ namespace ShitHaneul {
 	}
 	void GarbageCollector::StartGC(void(GarbageCollector::*pointer)(), bool shouldCreateNewThread) {
 		m_Status = Status::Working;
-		m_StackFrame = m_Interpreter.GetStackTrace();
+		m_StackTrace = m_Interpreter.GetStackTrace();
+		m_GlobalVariables = m_Interpreter.GetGlobalVariables();
 		if (shouldCreateNewThread) {
 			m_GCThread = std::make_unique<std::thread>(pointer, this);
 		} else {
@@ -163,37 +164,53 @@ namespace ShitHaneul {
 
 	void GarbageCollector::MinorGC() {
 		m_GCMaxGeneration = 0;
-
-		// TODO
+		Mark();
 	}
 	void GarbageCollector::MajorGC() {
 		m_GCMaxGeneration = 1;
-
-		// TODO
+		Mark();
 	}
 
-	void GarbageCollector::Mark(const Constant& constant) {
+	void GarbageCollector::Mark() {
+		for (Constant& globalVar : m_GlobalVariables) {
+			Mark(globalVar);
+		}
+		for (StackFrame& stackFrame : m_StackTrace) {
+			const std::uint32_t topOffset = static_cast<std::uint32_t>(stackFrame.GetTopOffset());
+			for (std::uint32_t i = 0; i < topOffset; ++i) {
+				Mark(stackFrame.LoadDirect(i));
+			}
+			for (Constant& freeVar : stackFrame.GetCurrentFunction()->FreeVariableList) {
+				Mark(freeVar);
+			}
+		}
+	}
+	void GarbageCollector::Mark(Constant& constant) {
 		if (!constant.index()) return;
 
 		const auto type = GetType(constant);
 		if (type == Type::Function) {
-			Mark(std::get<FunctionConstant>(constant).Value);
+			auto& func = std::get<FunctionConstant>(constant);
+			Mark(func.Value, &func.Value);
 		} else if (type == Type::Structure) {
-			Mark(std::get<StructureConstant>(constant).Value);
+			auto& structure = std::get<StructureConstant>(constant);
+			Mark(structure.Value, &structure.Value);
 		}
 	}
-	void GarbageCollector::Mark(ManagedConstantRoot* constant) {
-		if (constant->Generation > m_GCMaxGeneration || !constant->IsReady || constant->IsMarked) return;
+	void GarbageCollector::Mark(ManagedConstantRoot* constant, const std::variant<Function**, Structure**>& pointer) {
+		if (constant->Generation > m_GCMaxGeneration || !constant->IsReady) return;
 
+		m_GCPointerTable[constant].push_back(pointer);
+		if (constant->IsMarked) return;
 		constant->IsMarked = true;
-		m_GCPointerTable[constant];
+
 		if (constant->Type == Type::Function) {
 			const auto func = static_cast<Function*>(constant);
 			const std::uint8_t josaCount = func->JosaMap.GetCount();
 			for (std::uint8_t i = 0; i < josaCount; ++i) {
 				Mark(func->JosaMap[i].second);
 			}
-			for (const Constant& freeVar : func->FreeVariableList) {
+			for (Constant& freeVar : func->FreeVariableList) {
 				Mark(freeVar);
 			}
 		} else if (constant->Type == Type::Structure) {
